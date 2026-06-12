@@ -1,0 +1,1467 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rumbos Scout — Registro de Avance</title>
+<!-- Firebase v9 compat -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@300;400;600;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap');
+:root{--verde:#1B6B3A;--verde-claro:#2D8A50;--verde-bg:#EAF4EE;--ambar:#E8A020;--cafe:#6B4226;--crema:#F5F0E8;--hueso:#FAF7F2;--gris:#888;--texto:#2C2C2C;--rojo:#C0392B;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Josefin Sans',sans-serif;background:var(--crema);color:var(--texto);min-height:100vh;}
+
+/* ── LOGIN ── */
+#loginScreen{position:fixed;inset:0;background:linear-gradient(135deg,#1B6B3A 0%,#0f3d21 100%);display:flex;align-items:center;justify-content:center;z-index:999;flex-direction:column;gap:0;}
+#loginScreen.hidden{display:none;}
+.login-card{background:#fff;border-radius:20px;padding:36px 38px;width:100%;max-width:380px;box-shadow:0 30px 80px rgba(0,0,0,.35);}
+.login-logo{text-align:center;margin-bottom:24px;}
+.login-logo .ll-icon{font-size:52px;display:block;margin-bottom:8px;}
+.login-logo h1{font-family:'Lora',serif;font-size:22px;color:var(--verde);font-style:italic;}
+.login-logo p{font-size:12px;color:var(--gris);margin-top:3px;letter-spacing:1px;}
+.role-tabs{display:flex;gap:0;border:2px solid #eee;border-radius:10px;overflow:hidden;margin-bottom:20px;}
+.role-tab{flex:1;padding:9px;background:none;border:none;font-family:'Josefin Sans',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;color:var(--gris);cursor:pointer;transition:all .2s;}
+.role-tab.active{background:var(--verde);color:#fff;}
+.login-form{display:flex;flex-direction:column;gap:12px;}
+.login-input{padding:11px 14px;border:2px solid #e0e0e0;border-radius:8px;font-family:'Josefin Sans',sans-serif;font-size:14px;color:var(--texto);background:var(--hueso);transition:border-color .2s;}
+.login-input:focus{outline:none;border-color:var(--verde);background:#fff;}
+.login-btn{padding:12px;background:var(--verde);color:#fff;border:none;border-radius:8px;font-family:'Josefin Sans',sans-serif;font-size:14px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:background .2s;margin-top:4px;}
+.login-btn:hover{background:var(--verde-claro);}
+.login-sep{text-align:center;font-size:12px;color:var(--gris);position:relative;margin:4px 0;}
+.login-sep::before,.login-sep::after{content:'';position:absolute;top:50%;width:38%;height:1px;background:#eee;}
+.login-sep::before{left:0;}.login-sep::after{right:0;}
+.login-err{background:#fee2e2;color:#c0392b;padding:9px 12px;border-radius:7px;font-size:12px;font-weight:700;display:none;}
+.login-err.show{display:block;}
+
+/* ── TOPBAR ── */
+.topbar{background:var(--verde);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:54px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.25);}
+.topbar-brand{display:flex;align-items:center;gap:8px;font-size:17px;font-weight:700;color:#fff;letter-spacing:2px;}
+.topbar-right{display:flex;align-items:center;gap:8px;}
+.topbar-nav{display:flex;gap:2px;}
+.topbar-nav button{background:transparent;border:none;color:rgba(255,255,255,.75);padding:7px 13px;font-family:'Josefin Sans',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer;border-radius:6px;transition:all .2s;}
+.topbar-nav button:hover,.topbar-nav button.active{background:rgba(255,255,255,.15);color:#fff;}
+.user-pill{display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.15);padding:5px 12px 5px 7px;border-radius:20px;cursor:pointer;}
+.user-pill-avatar{width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;}
+.user-pill-name{font-size:12px;font-weight:700;color:#fff;letter-spacing:.5px;}
+.user-pill-role{font-size:10px;color:rgba(255,255,255,.7);letter-spacing:1px;}
+.logout-btn{background:rgba(255,255,255,.12);border:none;color:rgba(255,255,255,.8);padding:6px 10px;border-radius:6px;font-family:'Josefin Sans',sans-serif;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.5px;}
+.logout-btn:hover{background:rgba(255,255,255,.22);color:#fff;}
+
+/* ── LAYOUT ── */
+.app{display:flex;min-height:calc(100vh - 54px);}
+.sidebar{width:268px;flex-shrink:0;background:#fff;border-right:1px solid #ddd;display:flex;flex-direction:column;overflow-y:auto;}
+.sidebar-section{padding:14px;border-bottom:1px solid #eee;}
+.sidebar-title{font-size:10px;font-weight:700;letter-spacing:2px;color:var(--gris);text-transform:uppercase;margin-bottom:9px;}
+.add-scout-btn{width:100%;padding:9px;background:var(--verde);color:#fff;border:none;border-radius:8px;font-family:'Josefin Sans',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:background .2s;}
+.add-scout-btn:hover{background:var(--verde-claro);}
+.scout-list{display:flex;flex-direction:column;gap:5px;}
+.scout-item{display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:8px;cursor:pointer;transition:background .15s;border:2px solid transparent;position:relative;}
+.scout-item:hover{background:var(--verde-bg);}
+.scout-item.active{background:var(--verde-bg);border-color:var(--verde);}
+.scout-avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0;}
+.scout-info{flex:1;min-width:0;}
+.scout-name{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.scout-sub{font-size:11px;color:var(--gris);}
+.scout-del-btn{background:none;border:none;color:#ccc;cursor:pointer;font-size:15px;padding:2px 4px;border-radius:4px;transition:color .2s;flex-shrink:0;}
+.scout-del-btn:hover{color:var(--rojo);}
+
+.main{flex:1;overflow-y:auto;}
+.view{display:none;}
+.view.active{display:block;}
+
+/* ── DASHBOARD ── */
+.dashboard{padding:28px;max-width:980px;}
+.page-title{font-family:'Lora',serif;font-size:26px;color:var(--verde);font-style:italic;margin-bottom:4px;}
+.page-sub{color:var(--gris);font-size:13px;margin-bottom:24px;}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px;}
+.stat-card{background:#fff;border-radius:11px;padding:18px;border-top:4px solid;box-shadow:0 2px 8px rgba(0,0,0,.06);text-align:center;}
+.stat-card .si{font-size:24px;margin-bottom:6px;}
+.stat-card .sn{font-size:24px;font-weight:700;}
+.stat-card .sl{font-size:11px;color:var(--gris);letter-spacing:1px;text-transform:uppercase;}
+.rumbo-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}
+.rumbo-card{background:#fff;border-radius:11px;padding:18px;box-shadow:0 2px 8px rgba(0,0,0,.06);border-left:5px solid;}
+.rumbo-card-hdr{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.rc-emoji{font-size:30px;}
+.rc-title{font-size:15px;font-weight:700;}
+.rc-sub{font-size:11px;color:var(--gris);}
+.prog-bar{height:6px;background:#eee;border-radius:3px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:3px;transition:width .6s;}
+.rc-stats{display:flex;justify-content:space-between;margin-top:8px;font-size:11px;color:var(--gris);}
+
+/* ── SCOUTERS VIEW ── */
+.scouters-view{padding:28px;max-width:980px;}
+.scouters-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:20px;}
+.scouter-card{background:#fff;border-radius:12px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,.07);display:flex;flex-direction:column;align-items:center;gap:10px;position:relative;}
+.scouter-card-avatar{width:56px;height:56px;border-radius:50%;background:var(--verde);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#fff;}
+.scouter-card-name{font-size:15px;font-weight:700;text-align:center;}
+.scouter-card-role{font-size:11px;color:var(--gris);letter-spacing:1px;text-transform:uppercase;}
+.scouter-card-stats{font-size:12px;color:var(--gris);}
+.scouter-del-btn{position:absolute;top:10px;right:10px;background:none;border:none;color:#ccc;cursor:pointer;font-size:16px;padding:2px;transition:color .2s;}
+.scouter-del-btn:hover{color:var(--rojo);}
+
+/* ── PERFIL HEADER ── */
+.perfil-header{padding:28px;color:#fff;position:relative;overflow:hidden;}
+.perfil-header::before{content:'';position:absolute;right:-20px;top:-20px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.06);}
+.ph-top{display:flex;align-items:center;gap:18px;margin-bottom:18px;}
+.ph-avatar{width:68px;height:68px;border-radius:50%;font-size:26px;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;border:3px solid rgba(255,255,255,.35);flex-shrink:0;}
+.ph-name{font-family:'Lora',serif;font-size:24px;font-weight:600;}
+.ph-sub{font-size:13px;opacity:.8;margin-top:2px;}
+.ph-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.2);padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;letter-spacing:1px;margin-top:7px;}
+.ph-meta{display:flex;gap:22px;flex-wrap:wrap;}
+.ph-meta-item{font-size:12px;opacity:.85;}
+.ph-meta-item strong{display:block;font-size:17px;font-weight:700;opacity:1;}
+.perfil-body{padding:22px 28px;}
+.section-tabs{display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid #eee;overflow-x:auto;}
+.section-tab{padding:9px 18px;background:none;border:none;font-family:'Josefin Sans',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;color:var(--gris);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s;white-space:nowrap;}
+.section-tab:hover{color:var(--verde);}
+.section-tab.active{color:var(--verde);border-bottom-color:var(--verde);}
+.tab-content{display:none;}
+.tab-content.active{display:block;}
+
+/* RUMBOS GRID */
+.rumbos-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}
+.rumbo-entry{border-radius:12px;padding:18px;border:2px solid transparent;cursor:pointer;transition:all .2s;}
+.rumbo-entry:hover{transform:translateY(-1px);}
+.re-hdr{display:flex;align-items:center;gap:9px;margin-bottom:12px;}
+.re-title{font-size:14px;font-weight:700;}
+.re-desc{font-size:11px;color:var(--gris);margin-top:1px;}
+.rel-rows{display:flex;flex-direction:column;}
+.rel-row{display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(0,0,0,.06);}
+.rel-row:last-child{border-bottom:none;}
+.rel-name{font-size:11px;font-weight:600;}
+.rel-badge{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700;letter-spacing:.5px;}
+.s-si{background:#d4edda;color:#1B6B3A;}
+.s-no{background:#f8d7da;color:#7c1f27;}
+.s-p{background:#fff3cd;color:#856404;}
+.rel-action{font-size:11px;font-weight:700;letter-spacing:.5px;margin-top:10px;text-align:right;}
+
+/* HISTORIAL */
+.hist-line{position:relative;padding-left:26px;}
+.hist-line::before{content:'';position:absolute;left:8px;top:0;bottom:0;width:2px;background:#ddd;}
+.hist-item{position:relative;margin-bottom:18px;}
+.hist-dot{position:absolute;left:-22px;top:4px;width:13px;height:13px;border-radius:50%;border:2px solid #fff;}
+.hist-card{background:#fff;border-radius:9px;padding:12px 14px;box-shadow:0 1px 5px rgba(0,0,0,.07);}
+.hist-date{font-size:10px;color:var(--gris);letter-spacing:.5px;margin-bottom:3px;}
+.hist-title{font-size:13px;font-weight:700;margin-bottom:3px;}
+.hist-body{font-size:12px;color:#555;font-family:'Lora',serif;font-style:italic;}
+
+/* RUMBO FORM */
+.rfv-wrap{padding:24px 28px;max-width:900px;}
+.back-btn{display:flex;align-items:center;gap:5px;background:none;border:none;font-family:'Josefin Sans',sans-serif;font-size:12px;font-weight:700;color:var(--gris);cursor:pointer;letter-spacing:.5px;padding:0;margin-bottom:10px;transition:color .2s;}
+.back-btn:hover{color:var(--verde);}
+.rfv-hdr{display:flex;align-items:center;gap:14px;margin-bottom:22px;padding-bottom:16px;border-bottom:2px solid #eee;}
+.rfv-emoji{font-size:42px;}
+.rel-accordion{margin-bottom:12px;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.07);}
+.rel-acc-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;cursor:pointer;user-select:none;transition:filter .15s;}
+.rel-acc-hdr:hover{filter:brightness(.96);}
+.rel-acc-left{display:flex;align-items:center;gap:10px;}
+.rel-acc-title{font-size:14px;font-weight:700;}
+.rel-acc-sub{font-size:11px;opacity:.75;margin-top:1px;}
+.rel-acc-chevron{font-size:14px;transition:transform .25s;}
+.rel-acc-chevron.open{transform:rotate(180deg);}
+.rel-acc-body{background:#fff;display:none;}
+.rel-acc-body.open{display:block;}
+.exp-block{border-bottom:1px solid #f0f0f0;}
+.exp-block:last-child{border-bottom:none;}
+.exp-block-hdr{display:flex;align-items:center;gap:10px;padding:12px 18px;cursor:pointer;background:#fafafa;transition:background .15s;}
+.exp-block-hdr:hover{background:#f3f3f3;}
+.exp-block-num{font-size:12px;font-weight:700;color:var(--gris);width:20px;flex-shrink:0;}
+.exp-block-text{flex:1;font-size:13px;font-weight:600;}
+.exp-block-status{display:flex;align-items:center;gap:6px;}
+.exp-block-badge{font-size:10px;padding:2px 9px;border-radius:20px;font-weight:700;}
+.exp-block-arrow{font-size:12px;color:var(--gris);transition:transform .2s;}
+.exp-block-arrow.open{transform:rotate(180deg);}
+.exp-block-body{display:none;padding:18px 20px;background:#fff;border-top:1px solid #f5f5f5;}
+.exp-block-body.open{display:block;}
+.exp-section{margin-bottom:16px;padding:16px;border-radius:10px;border:1px solid #eee;}
+.exp-section-title{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:6px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+.form-group{display:flex;flex-direction:column;gap:5px;}
+.form-group.full{grid-column:1/-1;}
+.form-label{font-size:10px;font-weight:700;letter-spacing:1px;color:var(--gris);text-transform:uppercase;}
+.form-input,.form-textarea,.form-select{padding:8px 11px;border:2px solid #e0e0e0;border-radius:7px;font-family:'Josefin Sans',sans-serif;font-size:13px;color:var(--texto);background:var(--hueso);transition:border-color .2s;resize:vertical;}
+.form-input:focus,.form-textarea:focus,.form-select:focus{outline:none;border-color:var(--verde);background:#fff;}
+.form-textarea{min-height:64px;}
+.cb-row{display:flex;gap:16px;align-items:center;}
+.cb-opt{display:flex;align-items:center;gap:5px;cursor:pointer;}
+.cb-opt input{cursor:pointer;accent-color:var(--verde);width:14px;height:14px;}
+.cb-opt label{font-size:13px;cursor:pointer;}
+.exp-radio{display:flex;gap:14px;flex-wrap:wrap;}
+.exp-radio label{display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;}
+.exp-radio input{cursor:pointer;accent-color:var(--verde);}
+.save-btn{padding:10px 24px;color:#fff;border:none;border-radius:8px;font-family:'Josefin Sans',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:filter .2s;}
+.save-btn:hover{filter:brightness(1.1);}
+.btn-cancel{padding:10px 18px;background:#eee;border:none;border-radius:8px;font-family:'Josefin Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;}
+.btn-danger{padding:10px 18px;background:#fee2e2;color:var(--rojo);border:none;border-radius:8px;font-family:'Josefin Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;}
+
+/* CONFIG */
+.config-view{padding:28px;max-width:980px;}
+.cfg-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-bottom:24px;}
+.cfg-card{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.07);overflow:hidden;}
+.cfg-card-hdr{padding:13px 17px;display:flex;align-items:center;justify-content:space-between;}
+.cfg-card-title{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px;}
+.cfg-card-body{padding:0 17px 14px;}
+.rel-cfg-row{padding:8px 0;border-bottom:1px solid #f0f0f0;display:flex;align-items:flex-start;gap:8px;}
+.rel-cfg-row:last-child{border-bottom:none;}
+.rel-cfg-name{font-size:11px;font-weight:700;min-width:80px;padding-top:2px;}
+.exp-cfg-list{flex:1;}
+.exp-cfg-item{display:flex;align-items:center;gap:5px;padding:2px 0;}
+.exp-cfg-text{flex:1;font-size:11px;color:#444;}
+.exp-del-btn{background:none;border:none;color:#ccc;cursor:pointer;font-size:13px;transition:color .2s;padding:0 3px;}
+.exp-del-btn:hover{color:#e53e3e;}
+.add-exp-row{display:flex;gap:5px;margin-top:6px;}
+.add-exp-inp{flex:1;padding:5px 9px;border:1.5px solid #ddd;border-radius:5px;font-family:'Josefin Sans',sans-serif;font-size:11px;}
+.add-exp-inp:focus{outline:none;border-color:var(--verde);}
+.add-exp-btn{padding:5px 10px;background:var(--verde);color:#fff;border:none;border-radius:5px;font-family:'Josefin Sans',sans-serif;font-size:11px;font-weight:700;cursor:pointer;}
+.add-rel-row{display:flex;gap:8px;margin-top:10px;}
+.add-rel-inp{flex:1;padding:7px 11px;border:2px solid #ddd;border-radius:7px;font-family:'Josefin Sans',sans-serif;font-size:12px;}
+.add-rel-inp:focus{outline:none;border-color:var(--verde);}
+.add-rel-btn{padding:7px 13px;background:var(--verde);color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Josefin Sans',sans-serif;}
+/* Rumbo config cards */
+.rumbo-cfg-card{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.07);overflow:hidden;border-left:5px solid;}
+.rumbo-cfg-actions{display:flex;gap:6px;margin-top:8px;}
+.rumbo-cfg-edit-btn{padding:4px 10px;background:#EAF4EE;color:var(--verde);border:none;border-radius:6px;font-family:'Josefin Sans',sans-serif;font-size:11px;font-weight:700;cursor:pointer;}
+.rumbo-cfg-del-btn{padding:4px 10px;background:#fee2e2;color:var(--rojo);border:none;border-radius:6px;font-family:'Josefin Sans',sans-serif;font-size:11px;font-weight:700;cursor:pointer;}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:200;padding:16px;}
+.modal-overlay.hidden{display:none;}
+.modal{background:#fff;border-radius:14px;padding:26px;width:100%;max-width:440px;box-shadow:0 20px 60px rgba(0,0,0,.2);max-height:90vh;overflow-y:auto;}
+.modal-title{font-family:'Lora',serif;font-size:19px;color:var(--verde);margin-bottom:18px;font-style:italic;}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;}
+.btn-cancel2{padding:9px 18px;background:#eee;border:none;border-radius:8px;font-family:'Josefin Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;}
+.btn-primary{padding:9px 22px;background:var(--verde);color:#fff;border:none;border-radius:8px;font-family:'Josefin Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;}
+.btn-primary:hover{background:var(--verde-claro);}
+
+.toast{position:fixed;bottom:22px;right:22px;background:var(--verde);color:#fff;padding:11px 18px;border-radius:9px;font-size:13px;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.2);transform:translateY(80px);opacity:0;transition:all .3s;z-index:500;}
+.toast.show{transform:translateY(0);opacity:1;}
+.empty-state{text-align:center;padding:50px 20px;color:var(--gris);}
+.empty-state .ei{font-size:44px;margin-bottom:10px;}
+.empty-state h3{font-family:'Lora',serif;font-style:italic;color:var(--cafe);margin-bottom:5px;}
+.no-sel{display:flex;align-items:center;justify-content:center;height:100%;min-height:400px;flex-direction:column;gap:10px;color:var(--gris);font-family:'Lora',serif;font-style:italic;}
+.firebase-badge{font-size:10px;color:rgba(255,255,255,.5);letter-spacing:.5px;margin-left:8px;}
+.loading-bar{position:fixed;top:54px;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--verde-claro),var(--ambar));z-index:99;transform:scaleX(0);transform-origin:left;transition:transform .4s;}
+.loading-bar.active{transform:scaleX(1);}
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-thumb{background:#ccc;border-radius:3px;}
+@media(max-width:900px){.scouters-grid{grid-template-columns:repeat(2,1fr);}.stats-grid{grid-template-columns:repeat(2,1fr);}.rumbo-cards,.rumbos-grid,.cfg-grid{grid-template-columns:1fr;}.form-row{grid-template-columns:1fr;}.sidebar{width:220px;}}
+</style>
+</head>
+<body>
+
+<!-- LOADING BAR -->
+<div class="loading-bar" id="loadingBar"></div>
+
+<!-- ═══ LOGIN SCREEN ═══ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">
+      <span class="ll-icon">⚜️</span>
+      <h1>Rumbos Scout</h1>
+      <p>REGISTRO DE AVANCE</p>
+    </div>
+    <div class="role-tabs">
+      <button class="role-tab active" onclick="setLoginRole('scouter',this)">🧭 Scouter</button>
+      <button class="role-tab" onclick="setLoginRole('scout',this)">🐾 Scout</button>
+    </div>
+    <div class="login-form">
+      <input class="login-input" id="loginUser" placeholder="Nombre de usuario" autocomplete="username"/>
+      <input class="login-input" id="loginPass" type="password" placeholder="Contraseña" autocomplete="current-password"/>
+      <div class="login-err" id="loginErr">Usuario o contraseña incorrectos</div>
+      <button class="login-btn" onclick="doLogin()">Ingresar</button>
+    </div>
+    <div style="margin-top:14px;text-align:center;font-size:11px;color:var(--gris);">
+      🔥 Conectado a Firebase · Datos en tiempo real
+    </div>
+  </div>
+</div>
+
+<!-- ═══ APP ═══ -->
+<div class="topbar" id="mainTopbar" style="display:none">
+  <div class="topbar-brand"><span>⚜️</span> RUMBOS SCOUT <span class="firebase-badge">🔥 Firebase</span></div>
+  <div class="topbar-right">
+    <div class="topbar-nav" id="topNav"></div>
+    <div class="user-pill" id="userPill">
+      <div class="user-pill-avatar" id="userPillAvatar"></div>
+      <div>
+        <div class="user-pill-name" id="userPillName"></div>
+        <div class="user-pill-role" id="userPillRole"></div>
+      </div>
+    </div>
+    <button class="logout-btn" onclick="doLogout()">Salir</button>
+  </div>
+</div>
+
+<div class="app" id="mainApp" style="display:none">
+  <div class="sidebar" id="mainSidebar" style="display:none">
+    <div class="sidebar-section">
+      <div class="sidebar-title">Scouts registrados</div>
+      <button class="add-scout-btn" id="addScoutBtn" onclick="openAddScout()" style="display:none">+ Agregar Scout</button>
+    </div>
+    <div class="sidebar-section" style="flex:1">
+      <div class="scout-list" id="scoutList"></div>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- DASHBOARD -->
+    <div class="view active" id="view-dashboard">
+      <div class="dashboard">
+        <div class="page-title" id="dashTitle">Bienvenido</div>
+        <div class="page-sub">Seguimiento de avance — Tropa de Scouts</div>
+        <div class="stats-grid" id="statsGrid"></div>
+        <div style="font-size:11px;font-weight:700;letter-spacing:2px;color:var(--gris);text-transform:uppercase;margin-bottom:12px;">Rumbos</div>
+        <div class="rumbo-cards" id="rumboDashCards"></div>
+      </div>
+    </div>
+
+    <!-- SCOUTERS LIST (admin only) -->
+    <div class="view" id="view-scouters">
+      <div class="scouters-view">
+        <div class="page-title">👥 Scouters</div>
+        <div class="page-sub">Gestión del equipo de scouters</div>
+        <button class="save-btn" style="background:var(--verde);margin-bottom:4px" onclick="openAddScouter()">+ Agregar Scouter</button>
+        <div class="scouters-grid" id="scoutersList"></div>
+      </div>
+    </div>
+
+    <!-- SCOUTS PERFIL -->
+    <div class="view" id="view-scouts">
+      <div id="scoutPerfilContent">
+        <div class="no-sel"><div style="font-size:52px">⚜️</div><div>Selecciona un scout del panel izquierdo</div></div>
+      </div>
+    </div>
+
+    <!-- RUMBO FORM -->
+    <div class="view" id="view-rumboform">
+      <div id="rumboFormContent"></div>
+    </div>
+
+    <!-- CONFIG (scouter only) -->
+    <div class="view" id="view-config">
+      <div class="config-view" id="configContent"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ADD/EDIT SCOUT -->
+<div class="modal-overlay hidden" id="addScoutModal">
+  <div class="modal">
+    <div class="modal-title" id="scoutModalTitle">Registrar nuevo Scout ⚜️</div>
+    <div style="display:flex;flex-direction:column;gap:13px;">
+      <div class="form-group">
+        <span class="form-label">Nombre completo</span>
+        <input class="form-input" id="newName" placeholder="Ej. María González"/>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <span class="form-label">Edad</span>
+          <input class="form-input" id="newEdad" type="number" placeholder="12" min="10" max="21"/>
+        </div>
+        <div class="form-group">
+          <span class="form-label">Fecha de ingreso</span>
+          <input class="form-input" id="newFecha" type="date"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <span class="form-label">Nombre de la Patrulla</span>
+        <input class="form-input" id="newPatrulla" placeholder="Ej. Patrulla Águila"/>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel2" onclick="closeModal('addScoutModal')">Cancelar</button>
+      <button class="btn-primary" id="scoutModalSaveBtn" onclick="saveNewScout()">Registrar Scout</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ADD SCOUTER -->
+<div class="modal-overlay hidden" id="addScouterModal">
+  <div class="modal">
+    <div class="modal-title">Registrar Scouter 🧭</div>
+    <div style="display:flex;flex-direction:column;gap:13px;">
+      <div class="form-group">
+        <span class="form-label">Nombre completo</span>
+        <input class="form-input" id="scouterName" placeholder="Ej. Carlos Méndez"/>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <span class="form-label">Usuario (para login)</span>
+          <input class="form-input" id="scouterUser" placeholder="carlos.m"/>
+        </div>
+        <div class="form-group">
+          <span class="form-label">Contraseña</span>
+          <input class="form-input" type="password" id="scouterPass" placeholder="••••••"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <span class="form-label">Patrulla / Grupo</span>
+        <input class="form-input" id="scouterPatrulla" placeholder="Ej. Grupo 01"/>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel2" onclick="closeModal('addScouterModal')">Cancelar</button>
+      <button class="btn-primary" onclick="saveNewScouter()">Registrar Scouter</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ADD/EDIT RUMBO -->
+<div class="modal-overlay hidden" id="rumboModal">
+  <div class="modal">
+    <div class="modal-title" id="rumboModalTitle">Nuevo Rumbo</div>
+    <div style="display:flex;flex-direction:column;gap:13px;">
+      <div class="form-row">
+        <div class="form-group">
+          <span class="form-label">Nombre</span>
+          <input class="form-input" id="rumboModalName" placeholder="Ej. Águila"/>
+        </div>
+        <div class="form-group">
+          <span class="form-label">Emoji / Ícono</span>
+          <input class="form-input" id="rumboModalEmoji" placeholder="🦅" style="font-size:20px;text-align:center"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <span class="form-label">Descripción</span>
+        <input class="form-input" id="rumboModalDesc" placeholder="Ej. Desarrolla liderazgo avanzado"/>
+      </div>
+      <div class="form-group">
+        <span class="form-label">Color (hex)</span>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input class="form-input" id="rumboModalColor" placeholder="#1B6B3A" style="flex:1"/>
+          <input type="color" id="rumboModalColorPicker" value="#1B6B3A" style="width:38px;height:38px;border:none;border-radius:6px;cursor:pointer;padding:2px;" oninput="document.getElementById('rumboModalColor').value=this.value"/>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel2" onclick="closeModal('rumboModal')">Cancelar</button>
+      <button class="btn-primary" id="rumboModalSaveBtn" onclick="saveRumboFromModal()">Guardar Rumbo</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  FIREBASE CONFIG — reemplaza con tus credenciales reales
+// ═══════════════════════════════════════════════════════════
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCLs37Ek1wSxo1d2K-a-LHO9hBz0ztuzVI",
+  authDomain: "registroavancescout.firebaseapp.com",
+  projectId: "registroavancescout",
+  storageBucket: "registroavancescout.firebasestorage.app",
+  messagingSenderId: "578863558087",
+  appId: "1:578863558087:web:3c81b28533d4cac7993de2"
+  
+  
+};
+
+// ── Inicializar Firebase (con fallback a localStorage si no está configurado) ──
+let db = null;
+let USE_FIREBASE = false;
+
+try {
+  debugger;
+  firebase.initializeApp(FIREBASE_CONFIG);
+  db = firebase.firestore();
+  // Quick ping to check if credentials are valid
+  USE_FIREBASE = FIREBASE_CONFIG.apiKey !== "123";
+} catch(e) {
+  console.warn("Firebase no configurado, usando localStorage.");
+}
+
+// ── Colecciones Firestore ──
+const COL = {
+  scouts:    () => db.collection('scouts'),
+  scouters:  () => db.collection('scouters'),
+  config:    () => db.collection('config'),
+};
+
+// ═══════════════════════════════════════════════════════════
+//  DEFAULT DATA
+// ═══════════════════════════════════════════════════════════
+const DEFAULT_RUMBOS = {
+  tortuga: { name:'Tortuga', emoji:'🐢', color:'#2E7D50', bg:'#E8F5EE', desc:'Conoce su entorno y a sí mismo' },
+  venado:  { name:'Venado',  emoji:'🦌', color:'#8B5E3C', bg:'#F5EDE4', desc:'Explora sus límites y capacidades' },
+  ocelote: { name:'Ocelote', emoji:'🐆', color:'#C4780A', bg:'#FDF3E3', desc:'Desarrolla habilidades avanzadas' },
+  quetzal: { name:'Quetzal', emoji:'🦜', color:'#1565A8', bg:'#E3EEFA', desc:'Lidera con servicio y valor' },
+};
+
+const DEFAULT_RELATIONS = {
+  consigo:      { name:'Relación Consigo Mismo',      emoji:'🌱', color:'#B7791F', colorBg:'#FFFBEA' },
+  demas:        { name:'Relación con los Demás',       emoji:'🤝', color:'#3B82F6', colorBg:'#EFF6FF' },
+  entorno:      { name:'Relación con el Entorno',      emoji:'🌿', color:'#10B981', colorBg:'#ECFDF5' },
+  trascendente: { name:'Relación con lo Trascendente', emoji:'✨', color:'#8B5CF6', colorBg:'#F5F3FF' },
+};
+
+const DEFAULT_EXPLORATIONS = {
+  tortuga:{
+    consigo:[{id:'t_c_1',text:'Se hace responsable de su autocuidado.'},{id:'t_c_2',text:'Se hace responsable de su cuerpo.'},{id:'t_c_3',text:'Reconoce su ámbito afectivo-emocional.'},{id:'t_c_4',text:'Define sus límites.'}],
+    demas:[{id:'t_d_1',text:'Establece relaciones interpersonales basadas en la empatía.'},{id:'t_d_2',text:'Respeta las opiniones y diferencias de los demás.'}],
+    entorno:[{id:'t_e_1',text:'A través de actividades se siente parte de la naturaleza.'},{id:'t_e_2',text:'Valora la vida al aire libre.'}],
+    trascendente:[{id:'t_t_1',text:'Reflexiona sobre el sentido de su vida.'},{id:'t_t_2',text:'Reflexiona sobre los principios y prácticas de la fe.'},{id:'t_t_3',text:'Entiende que los principios y prácticas de la fe son un medio para el desarrollo espiritual.'}],
+  },
+  venado:{
+    consigo:[{id:'v_c_1',text:'Desarrolla hábitos saludables y de autocuidado consciente.'},{id:'v_c_2',text:'Reconoce y gestiona sus emociones ante situaciones de conflicto.'},{id:'v_c_3',text:'Establece metas personales y trabaja para alcanzarlas.'},{id:'v_c_4',text:'Fortalece su autoconfianza mediante retos superados.'}],
+    demas:[{id:'v_d_1',text:'Colabora activamente en equipos con actitud de servicio.'},{id:'v_d_2',text:'Practica la resolución pacífica de conflictos.'},{id:'v_d_3',text:'Cuida y fortalece sus vínculos de amistad y fraternidad.'}],
+    entorno:[{id:'v_e_1',text:'Participa en actividades de conservación del medio ambiente.'},{id:'v_e_2',text:'Aplica técnicas de supervivencia y campismo responsable.'},{id:'v_e_3',text:'Valora la biodiversidad como parte de su entorno.'}],
+    trascendente:[{id:'v_t_1',text:'Profundiza en el sentido de su vida a través de la reflexión personal.'},{id:'v_t_2',text:'Vincula sus principios y valores con su práctica cotidiana.'},{id:'v_t_3',text:'Aprecia la diversidad de expresiones espirituales con respeto.'}],
+  },
+  ocelote:{
+    consigo:[{id:'o_c_1',text:'Gestiona su tiempo y recursos de manera autónoma y eficiente.'},{id:'o_c_2',text:'Mantiene un equilibrio saludable entre responsabilidades personales y grupales.'},{id:'o_c_3',text:'Desarrolla habilidades de liderazgo personal y autoconocimiento profundo.'},{id:'o_c_4',text:'Asume con madurez las consecuencias de sus decisiones.'}],
+    demas:[{id:'o_d_1',text:'Ejerce un liderazgo participativo y motivador dentro del grupo.'},{id:'o_d_2',text:'Fomenta un ambiente inclusivo y de respeto mutuo.'},{id:'o_d_3',text:'Actúa como mediador en situaciones de conflicto grupal.'}],
+    entorno:[{id:'o_e_1',text:'Diseña y ejecuta proyectos de impacto ambiental en su comunidad.'},{id:'o_e_2',text:'Integra prácticas sostenibles en su vida diaria.'},{id:'o_e_3',text:'Educa a otros sobre la importancia del cuidado del entorno.'}],
+    trascendente:[{id:'o_t_1',text:'Reflexiona críticamente sobre su proyecto de vida y su propósito.'},{id:'o_t_2',text:'Integra sus valores espirituales en su servicio a los demás.'},{id:'o_t_3',text:'Inspira a otros a través de su testimonio de vida coherente.'}],
+  },
+  quetzal:{
+    consigo:[{id:'q_c_1',text:'Demuestra plena madurez emocional y personal en sus decisiones.'},{id:'q_c_2',text:'Define y vive su proyecto de vida con integridad y propósito.'},{id:'q_c_3',text:'Es modelo de vida saludable, equilibrada y comprometida.'},{id:'q_c_4',text:'Actúa con autonomía, responsabilidad y visión a largo plazo.'}],
+    demas:[{id:'q_d_1',text:'Forma, guía y acompaña a scouts de rumbos anteriores.'},{id:'q_d_2',text:'Construye redes de colaboración dentro y fuera de la tropa.'},{id:'q_d_3',text:'Promueve una cultura de paz, inclusión y servicio en su comunidad.'}],
+    entorno:[{id:'q_e_1',text:'Lidera proyectos de transformación social y ambiental sostenidos.'},{id:'q_e_2',text:'Integra la sostenibilidad como principio rector de sus proyectos.'},{id:'q_e_3',text:'Moviliza a otros hacia el compromiso ambiental y comunitario.'}],
+    trascendente:[{id:'q_t_1',text:'Vive coherentemente sus principios espirituales y los traduce en acción.'},{id:'q_t_2',text:'Inspira y acompaña a otros en su búsqueda de sentido y trascendencia.'},{id:'q_t_3',text:'Contribuye al bien común guiado por sus convicciones más profundas.'}],
+  },
+};
+
+const EVAL_QUESTIONS=[
+  {key:'aprendido',label:'¿Qué he aprendido?'},
+  {key:'como_aprendi',label:'¿Cómo lo he aprendido?'},
+  {key:'para_que',label:'¿Para qué me ha servido lo que aprendí?'},
+  {key:'aplico',label:'¿Cómo aplico mis nuevos conocimientos?'},
+  {key:'donde_aplico',label:'¿En dónde aplico mis nuevos conocimientos?'},
+];
+
+// ═══════════════════════════════════════════════════════════
+//  APP STATE  (always loaded from Firestore / localStorage)
+// ═══════════════════════════════════════════════════════════
+let APP = { scouts:[], scouters:[], rumbos:{}, exploraciones:{}, relations:{} };
+
+// Hard-coded admin (solo para demostración; en producción usar Firebase Auth)
+const ADMIN = { user:'admin', pass:'scout2024', name:'Administrador', role:'admin' };
+// Default demo scouter
+const DEMO_SCOUTERS = [
+  { id:'s1', name:'Carlos Méndez', user:'carlos', pass:'scout123', patrulla:'Patrulla Águila', role:'scouter' },
+];
+// Default demo scouts
+const DEMO_SCOUTS = [
+  { id:'1', name:'Ana López',     edad:12, fechaIngreso:'2024-01-15', patrulla:'Patrulla Águila', rumbos:{} },
+  { id:'2', name:'Diego Martínez',edad:14, fechaIngreso:'2023-09-01', patrulla:'Patrulla Jaguar', rumbos:{} },
+];
+
+let SESSION = null; // { user, name, role, id }
+let currentScoutId = null;
+let currentRumboKey = null;
+let editingRumboKey = null;
+
+// ─── Colores automáticos para nuevos rumbos ───
+const RUMBO_COLORS = ['#2E7D50','#8B5E3C','#C4780A','#1565A8','#7B2D8B','#B7791F','#0F5F7A','#6B3FA0'];
+const RUMBO_BGS   = ['#E8F5EE','#F5EDE4','#FDF3E3','#E3EEFA','#F5F0FD','#FFFBEA','#E3F6FD','#F0EBFC'];
+
+// ═══════════════════════════════════════════════════════════
+//  PERSISTENCE  (Firebase or localStorage fallback)
+// ═══════════════════════════════════════════════════════════
+function loadLocal(){
+  try{
+    const d=JSON.parse(localStorage.getItem('scouts_app_v4'));
+    if(d) return d;
+  }catch(e){}
+  return {
+    scouts: DEMO_SCOUTS.map(s=>({...s,rumbos:{}})),
+    scouters: DEMO_SCOUTERS,
+    rumbos: JSON.parse(JSON.stringify(DEFAULT_RUMBOS)),
+    exploraciones: JSON.parse(JSON.stringify(DEFAULT_EXPLORATIONS)),
+    relations: JSON.parse(JSON.stringify(DEFAULT_RELATIONS)),
+  };
+}
+function saveLocal(){ localStorage.setItem('scouts_app_v4',JSON.stringify(APP)); }
+
+async function loadFirestore(){
+  try{
+    loading(true);
+    // Load config doc
+    const cfgDoc = await COL.config().doc('main').get();
+    if(cfgDoc.exists){
+      const c = cfgDoc.data();
+      APP.rumbos      = c.rumbos      || JSON.parse(JSON.stringify(DEFAULT_RUMBOS));
+      APP.exploraciones = c.exploraciones || JSON.parse(JSON.stringify(DEFAULT_EXPLORATIONS));
+      APP.relations   = c.relations   || JSON.parse(JSON.stringify(DEFAULT_RELATIONS));
+    } else {
+      APP.rumbos      = JSON.parse(JSON.stringify(DEFAULT_RUMBOS));
+      APP.exploraciones = JSON.parse(JSON.stringify(DEFAULT_EXPLORATIONS));
+      APP.relations   = JSON.parse(JSON.stringify(DEFAULT_RELATIONS));
+      await COL.config().doc('main').set({ rumbos:APP.rumbos, exploraciones:APP.exploraciones, relations:APP.relations });
+    }
+    // Load scouts
+    const scoutsSnap = await COL.scouts().get();
+    APP.scouts = scoutsSnap.docs.map(d=>({id:d.id,...d.data()}));
+    if(!APP.scouts.length){
+      for(const s of DEMO_SCOUTS){
+        await COL.scouts().doc(s.id).set(s);
+      }
+      APP.scouts = [...DEMO_SCOUTS];
+    }
+    // Load scouters
+    const scoutersSnap = await COL.scouters().get();
+    APP.scouters = scoutersSnap.docs.map(d=>({id:d.id,...d.data()}));
+    if(!APP.scouters.length){
+      for(const s of DEMO_SCOUTERS){
+        await COL.scouters().doc(s.id).set(s);
+      }
+      APP.scouters = [...DEMO_SCOUTERS];
+    }
+    loading(false);
+  }catch(e){
+    console.error('Firestore error:',e);
+    loading(false);
+    showToast('⚠️ Error Firebase, usando datos locales');
+    const local = loadLocal();
+    Object.assign(APP, local);
+  }
+}
+
+async function saveConfig(){
+  if(USE_FIREBASE){
+    try{ await COL.config().doc('main').set({ rumbos:APP.rumbos, exploraciones:APP.exploraciones, relations:APP.relations }); }
+    catch(e){ console.error(e); saveLocal(); }
+  } else { saveLocal(); }
+}
+
+async function saveScout(scout){
+  if(USE_FIREBASE){
+    try{
+      const {id,...data} = scout;
+      await COL.scouts().doc(id).set(data);
+    }catch(e){ console.error(e); saveLocal(); }
+  } else { saveLocal(); }
+}
+
+async function deleteScoutDB(id){
+  if(USE_FIREBASE){
+    try{ await COL.scouts().doc(id).delete(); }
+    catch(e){ console.error(e); }
+  }
+}
+
+async function saveScouter(scouter){
+  if(USE_FIREBASE){
+    try{
+      const {id,...data} = scouter;
+      await COL.scouters().doc(id).set(data);
+    }catch(e){ console.error(e); }
+  } else { saveLocal(); }
+}
+
+async function deleteScouterDB(id){
+  if(USE_FIREBASE){
+    try{ await COL.scouters().doc(id).delete(); }
+    catch(e){ console.error(e); }
+  }
+}
+
+function loading(on){ document.getElementById('loadingBar').classList.toggle('active',on); }
+
+// ═══════════════════════════════════════════════════════════
+//  AUTH / LOGIN
+// ═══════════════════════════════════════════════════════════
+let loginRole = 'scouter';
+function setLoginRole(role,btn){
+  loginRole=role;
+  document.querySelectorAll('.role-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function doLogin(){
+  const user = document.getElementById('loginUser').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  const err  = document.getElementById('loginErr');
+
+  // Admin check
+  if(user===ADMIN.user && pass===ADMIN.pass){
+    SESSION={user,name:ADMIN.name,role:'admin',id:'admin'};
+    startApp();
+    return;
+  }
+
+  if(loginRole==='scouter'){
+    const found = APP.scouters.find(s=>s.user===user && s.pass===pass);
+    if(found){ SESSION={user,name:found.name,role:'scouter',id:found.id}; startApp(); return; }
+  } else {
+    // Scouts login by name (simplified — in prod use Firebase Auth)
+    const found = APP.scouts.find(s=>s.name.toLowerCase().replace(/\s/g,'')===user.toLowerCase().replace(/\s/g,''));
+    if(found && pass==='scout'){ SESSION={user,name:found.name,role:'scout',id:found.id}; startApp(); return; }
+    // Demo pass for any scout: "scout"
+    if(APP.scouts.length && pass==='scout'){
+      const s=APP.scouts[0];
+      SESSION={user:s.name,name:s.name,role:'scout',id:s.id}; startApp(); return;
+    }
+  }
+
+  err.classList.add('show');
+  setTimeout(()=>err.classList.remove('show'),2800);
+}
+
+function startApp(){
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('mainTopbar').style.display='flex';
+  document.getElementById('mainApp').style.display='flex';
+
+  // User pill
+  const initials = SESSION.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+  document.getElementById('userPillAvatar').textContent=initials;
+  document.getElementById('userPillName').textContent=SESSION.name;
+  document.getElementById('userPillRole').textContent=SESSION.role==='admin'?'ADMIN':SESSION.role==='scouter'?'SCOUTER':'SCOUT';
+  document.getElementById('dashTitle').textContent=`Bienvenido, ${SESSION.name.split(' ')[0]}`;
+
+  // Build nav based on role
+  buildNav();
+  buildSidebar();
+  renderSidebar();
+  if(SESSION.role==='scout'){
+    // Scouts go directly to their own profile — no dashboard
+    selectScout(SESSION.id);
+  } else {
+    renderDashboard();
+  }
+}
+
+function buildNav(){
+  const nav = document.getElementById('topNav');
+  let html = '';
+  if(SESSION.role==='admin'||SESSION.role==='scouter'){
+    html += `<button class="active" onclick="showView('dashboard')">📊 Dashboard</button>`;
+    html += `<button onclick="showView('scouts')">👤 Scouts</button>`;
+    html += `<button onclick="showView('scouters')">🧭 Scouters</button>`;
+    html += `<button onclick="showView('config')">⚙️ Config</button>`;
+  }
+  // Scout role: no nav buttons — they only see their own profile
+  nav.innerHTML = html;
+}
+
+function buildSidebar(){
+  const sidebar = document.getElementById('mainSidebar');
+  const addBtn  = document.getElementById('addScoutBtn');
+  if(SESSION.role==='admin'||SESSION.role==='scouter'){
+    sidebar.style.display='flex';
+    addBtn.style.display='block';
+  } else {
+    sidebar.style.display='none';
+  }
+}
+
+function doLogout(){
+  SESSION=null;
+  currentScoutId=null;
+  document.getElementById('loginScreen').classList.remove('hidden');
+  document.getElementById('mainTopbar').style.display='none';
+  document.getElementById('mainApp').style.display='none';
+  document.getElementById('loginUser').value='';
+  document.getElementById('loginPass').value='';
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SIDEBAR
+// ═══════════════════════════════════════════════════════════
+function renderSidebar(){
+  const list=document.getElementById('scoutList');
+  if(!APP.scouts.length){
+    list.innerHTML='<div style="text-align:center;color:var(--gris);font-size:12px;padding:18px 0;font-family:Lora,serif;font-style:italic">Sin scouts</div>';
+    return;
+  }
+  const avatarColors=['#2E7D50','#8B5E3C','#C4780A','#1565A8','#7B2D8B','#1A6B6B','#8B3A3A'];
+  list.innerHTML=APP.scouts.map((s,i)=>{
+    const initials=s.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+    const c=avatarColors[i%avatarColors.length];
+    const canDelete=SESSION&&(SESSION.role==='admin'||SESSION.role==='scouter');
+    return `<div class="scout-item ${currentScoutId===s.id?'active':''}" onclick="selectScout('${s.id}')">
+      <div class="scout-avatar" style="background:${c}">${initials}</div>
+      <div class="scout-info">
+        <div class="scout-name">${s.name}</div>
+        <div class="scout-sub">⚜️ ${s.patrulla||'Sin patrulla'}</div>
+      </div>
+      ${canDelete?`<button class="scout-del-btn" title="Eliminar scout" onclick="event.stopPropagation();confirmDeleteScout('${s.id}')">🗑</button>`:''}
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  DASHBOARD
+// ═══════════════════════════════════════════════════════════
+function renderDashboard(){
+  const total=APP.scouts.length;
+  const completados=APP.scouts.filter(s=>calcOverallProgress(s)===100).length;
+  const avg=total>0?Math.round(APP.scouts.reduce((a,s)=>a+calcOverallProgress(s),0)/total):0;
+  document.getElementById('statsGrid').innerHTML=`
+    <div class="stat-card" style="border-color:var(--verde)"><div class="si">👤</div><div class="sn" style="color:var(--verde)">${total}</div><div class="sl">Scouts</div></div>
+    <div class="stat-card" style="border-color:var(--ambar)"><div class="si">🏅</div><div class="sn" style="color:var(--ambar)">${completados}</div><div class="sl">Completados</div></div>
+    <div class="stat-card" style="border-color:#1565A8"><div class="si">📋</div><div class="sn" style="color:#1565A8">${Object.keys(APP.rumbos).length}</div><div class="sl">Rumbos</div></div>
+    <div class="stat-card" style="border-color:#8B5E3C"><div class="si">⚜️</div><div class="sn" style="color:#8B5E3C">${avg}%</div><div class="sl">Progreso</div></div>`;
+  document.getElementById('rumboDashCards').innerHTML=Object.entries(APP.rumbos).map(([key,r])=>{
+    const avgP=APP.scouts.length>0?Math.round(APP.scouts.reduce((a,s)=>a+getRumboProgress(s,key),0)/APP.scouts.length):0;
+    return `<div class="rumbo-card" style="border-left-color:${r.color}">
+      <div class="rumbo-card-hdr"><div class="rc-emoji">${r.emoji}</div><div><div class="rc-title">${r.name}</div><div class="rc-sub">${r.desc}</div></div></div>
+      <div class="prog-bar"><div class="prog-fill" style="width:${avgP}%;background:${r.color}"></div></div>
+      <div class="rc-stats"><span>${APP.scouts.length} scout${APP.scouts.length!==1?'s':''}</span><span>${avgP}% promedio</span></div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SCOUTERS LIST
+// ═══════════════════════════════════════════════════════════
+function renderScouters(){
+  const grid=document.getElementById('scoutersList');
+  const all=[...APP.scouters];
+  if(!all.length){
+    grid.innerHTML='<div class="empty-state"><div class="ei">🧭</div><h3>Sin scouters registrados</h3></div>';
+    return;
+  }
+  const colors=['#2E7D50','#8B5E3C','#C4780A','#1565A8','#7B2D8B'];
+  grid.innerHTML=all.map((s,i)=>{
+    const initials=s.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+    const c=colors[i%colors.length];
+    const scoutCount=APP.scouts.filter(sc=>sc.scouter===s.id||sc.patrulla===s.patrulla).length;
+    return `<div class="scouter-card">
+      <button class="scouter-del-btn" onclick="confirmDeleteScouter('${s.id}')">🗑</button>
+      <div class="scouter-card-avatar" style="background:${c}">${initials}</div>
+      <div class="scouter-card-name">${s.name}</div>
+      <div class="scouter-card-role">🧭 Scouter</div>
+      <div class="scouter-card-stats">${s.patrulla||'—'}</div>
+      <div class="scouter-card-stats" style="color:var(--verde)">Usuario: ${s.user}</div>
+    </div>`;
+  }).join('');
+}
+
+function openAddScouter(){
+  document.getElementById('addScouterModal').classList.remove('hidden');
+}
+
+async function saveNewScouter(){
+  const name=document.getElementById('scouterName').value.trim();
+  const user=document.getElementById('scouterUser').value.trim();
+  const pass=document.getElementById('scouterPass').value.trim();
+  const patrulla=document.getElementById('scouterPatrulla').value.trim();
+  if(!name||!user||!pass){showToast('⚠️ Completa nombre, usuario y contraseña');return;}
+  const s={id:'sc_'+Date.now(),name,user,pass,patrulla,role:'scouter'};
+  APP.scouters.push(s);
+  await saveScouter(s);
+  closeModal('addScouterModal');
+  document.getElementById('scouterName').value='';
+  document.getElementById('scouterUser').value='';
+  document.getElementById('scouterPass').value='';
+  document.getElementById('scouterPatrulla').value='';
+  renderScouters();
+  showToast('✅ Scouter registrado');
+}
+
+async function confirmDeleteScouter(id){
+  if(!confirm('¿Eliminar este scouter?')) return;
+  APP.scouters=APP.scouters.filter(s=>s.id!==id);
+  await deleteScouterDB(id);
+  renderScouters();
+  showToast('🗑️ Scouter eliminado');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  PROGRESS HELPERS
+// ═══════════════════════════════════════════════════════════
+function getScout(id){return APP.scouts.find(s=>s.id===id);}
+
+function getExpData(scout,rumboKey,relKey,expId){
+  if(!scout.rumbos[rumboKey]) scout.rumbos[rumboKey]={completed:false,savedAt:null,relaciones:{}};
+  const rd=scout.rumbos[rumboKey];
+  if(!rd.relaciones) rd.relaciones={};
+  if(!rd.relaciones[relKey]) rd.relaciones[relKey]={};
+  if(!rd.relaciones[relKey][expId]) rd.relaciones[relKey][expId]={
+    logro:null,observacion:'',territorio:'',
+    evaluacion:{aprendido:'',como_aprendi:'',para_que:'',aplico:'',donde_aplico:''},
+    comentarios:'',fechaInicio:'',fechaFinal:'',fechaEval:'',scouter:'',completada:false,
+  };
+  return rd.relaciones[relKey][expId];
+}
+
+function getRumboProgress(scout,rk){
+  const expls=APP.exploraciones[rk];
+  if(!expls) return 0;
+  let total=0,done=0;
+  Object.entries(expls).forEach(([relKey,arr])=>{
+    arr.forEach(exp=>{
+      total++;
+      const ed=scout.rumbos?.[rk]?.relaciones?.[relKey]?.[exp.id];
+      if(ed&&(ed.logro==='si'||ed.logro==='no')) done++;
+    });
+  });
+  return total===0?0:Math.round((done/total)*100);
+}
+
+function calcOverallProgress(scout){
+  const keys=Object.keys(APP.rumbos);
+  if(!keys.length) return 0;
+  let done=0;
+  keys.forEach(rk=>{if(scout.rumbos?.[rk]?.completed) done++;});
+  return Math.round((done/keys.length)*100);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SCOUT PERFIL
+// ═══════════════════════════════════════════════════════════
+function selectScout(id){
+  currentScoutId=id;
+  showView('scouts');
+  renderSidebar();
+  renderPerfilScout();
+}
+
+function renderPerfilScout(){
+  const scout=getScout(currentScoutId);
+  if(!scout) return;
+  const initials=scout.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+  const progress=calcOverallProgress(scout);
+  const rumbosComp=Object.keys(APP.rumbos).filter(rk=>scout.rumbos?.[rk]?.completed).length;
+  const histItems=buildHistorial(scout);
+
+  document.getElementById('scoutPerfilContent').innerHTML=`
+    <div>
+      <div class="perfil-header" style="background:linear-gradient(135deg,#1B6B3A 0%,#2D8A50 100%)">
+        <div class="ph-top">
+          <div class="ph-avatar" style="background:rgba(255,255,255,.2)">${initials}</div>
+          <div>
+            <div class="ph-name">${scout.name}</div>
+            <div class="ph-sub">${scout.edad||'—'} años · Ingreso: ${scout.fechaIngreso||'—'}</div>
+            <div class="ph-badge">⚜️ ${scout.patrulla||'Sin patrulla'}</div>
+          </div>
+        </div>
+        <div class="ph-meta">
+          <div class="ph-meta-item"><strong>${progress}%</strong>Avance total</div>
+          <div class="ph-meta-item"><strong>${rumbosComp}/${Object.keys(APP.rumbos).length}</strong>Rumbos completados</div>
+          <div class="ph-meta-item"><strong>${scout.patrulla||'—'}</strong>Patrulla</div>
+        </div>
+      </div>
+      <div class="perfil-body">
+        <div class="section-tabs">
+          <button class="section-tab active" onclick="switchTab('rumbos',this)">📍 Rumbos</button>
+          <button class="section-tab" onclick="switchTab('historial',this)">📜 Historial</button>
+        </div>
+        <div class="tab-content active" id="tab-rumbos">
+          <div class="rumbos-grid">
+            ${Object.entries(APP.rumbos).map(([key,rm])=>renderRumboCard(scout,key,rm)).join('')}
+          </div>
+        </div>
+        <div class="tab-content" id="tab-historial">
+          ${histItems.length
+            ?`<div class="hist-line">${histItems.map(h=>`
+                <div class="hist-item">
+                  <div class="hist-dot" style="background:${h.color};box-shadow:0 0 0 2px ${h.color}"></div>
+                  <div class="hist-card">
+                    <div class="hist-date">${h.date}</div>
+                    <div class="hist-title">${h.emoji} ${h.title}</div>
+                    <div class="hist-body">${h.body}</div>
+                  </div>
+                </div>`).join('')}</div>`
+            :`<div class="empty-state"><div class="ei">📜</div><h3>Sin historial aún</h3><p>Guarda avances para ver el historial.</p></div>`}
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderRumboCard(scout,key,rm){
+  const prog=getRumboProgress(scout,key);
+  const isCompleted=scout.rumbos?.[key]?.completed;
+  const relKeys=Object.keys(APP.relations);
+  const relRows=relKeys.map(relKey=>{
+    const rel=APP.relations[relKey];
+    const exps=(APP.exploraciones[key]&&APP.exploraciones[key][relKey])||[];
+    if(!exps.length) return '';
+    const total=exps.length;
+    const done=exps.filter(e=>{const ed=scout.rumbos?.[key]?.relaciones?.[relKey]?.[e.id];return ed&&(ed.logro==='si'||ed.logro==='no');}).length;
+    const all=done===total&&total>0;
+    return `<div class="rel-row">
+      <div class="rel-name">${rel.emoji} ${rel.name.replace('Relación ','').replace('con ','').replace('Consigo ','')}</div>
+      <div class="rel-badge ${all?'s-si':'s-p'}">${all?'✓ ':''} ${done}/${total}</div>
+    </div>`;
+  }).join('');
+  return `<div class="rumbo-entry" style="background:${rm.bg};border-color:${prog>0?rm.color:'transparent'}" onclick="openRumboForm('${key}')">
+    <div class="re-hdr">
+      <div style="font-size:26px">${rm.emoji}</div>
+      <div style="flex:1"><div class="re-title" style="color:${rm.color}">${rm.name}</div><div class="re-desc">${rm.desc}</div></div>
+      ${isCompleted?'<div style="font-size:18px">✅</div>':''}
+    </div>
+    <div style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--gris);margin-bottom:3px"><span>Exploraciones</span><span>${prog}%</span></div>
+      <div class="prog-bar"><div class="prog-fill" style="width:${prog}%;background:${rm.color}"></div></div>
+    </div>
+    <div class="rel-rows">${relRows}</div>
+    <div class="rel-action" style="color:${rm.color}">${scout.rumbos?.[key]?.savedAt?'✏️ Editar':'+ Iniciar'} →</div>
+  </div>`;
+}
+
+function buildHistorial(scout){
+  const items=[];
+  items.push({date:scout.fechaIngreso||'',title:'Ingreso a la tropa',emoji:'⚜️',body:'Scout registrado.',color:'#1B6B3A'});
+  Object.entries(APP.rumbos).forEach(([key,rm])=>{
+    const rd=scout.rumbos?.[key];
+    if(rd?.savedAt) items.push({date:rd.savedAt,title:`Rumbo ${rm.name} — avance guardado`,emoji:rm.emoji,body:'Sección actualizada.',color:rm.color});
+    if(rd?.completed&&rd?.fechaFinal) items.push({date:rd.fechaFinal,title:`Rumbo ${rm.name} completado`,emoji:'🏅',body:'Rumbo finalizado.',color:rm.color});
+    if(rd?.relaciones){
+      Object.entries(rd.relaciones).forEach(([relKey,relData])=>{
+        Object.entries(relData).forEach(([expId,ed])=>{
+          if(ed?.fechaEval){
+            const expDef=(APP.exploraciones[key]&&APP.exploraciones[key][relKey]||[]).find(e=>e.id===expId);
+            items.push({date:ed.fechaEval,title:`${rm.emoji} ${rm.name} — exploración evaluada`,emoji:APP.relations[relKey]?.emoji||'📋',body:expDef?expDef.text:'',color:rm.color});
+          }
+        });
+      });
+    }
+  });
+  return items.filter(i=>i.date).sort((a,b)=>new Date(b.date)-new Date(a.date));
+}
+
+function switchTab(tab,btn){
+  document.querySelectorAll('.section-tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-'+tab).classList.add('active');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  RUMBO FORM
+// ═══════════════════════════════════════════════════════════
+function openRumboForm(rumboKey){
+  const scout=getScout(currentScoutId);
+  if(!scout) return;
+  currentRumboKey=rumboKey;
+  const r=APP.rumbos[rumboKey];
+  const rd=scout.rumbos[rumboKey]||{};
+  if(!scout.rumbos[rumboKey]) scout.rumbos[rumboKey]={completed:false,savedAt:null,relaciones:{}};
+
+  const relationsHTML=Object.entries(APP.relations).map(([relKey,rel])=>{
+    const exps=(APP.exploraciones[rumboKey]&&APP.exploraciones[rumboKey][relKey])||[];
+    if(!exps.length) return '';
+    const done=exps.filter(e=>{const ed=rd.relaciones?.[relKey]?.[e.id];return ed&&(ed.logro==='si'||ed.logro==='no');}).length;
+
+    const expsHTML=exps.map((exp,idx)=>{
+      const ed=rd.relaciones?.[relKey]?.[exp.id]||{};
+      const logro=ed.logro||null;
+      let badgeClass='s-p',badgeText='Pendiente';
+      if(logro==='si'){badgeClass='s-si';badgeText='SÍ ✓';}
+      else if(logro==='no'){badgeClass='s-no';badgeText='NO';}
+      const evalFields=EVAL_QUESTIONS.map(q=>`
+        <div class="form-group full" style="margin-bottom:10px">
+          <span class="form-label">${q.label}</span>
+          <textarea class="form-textarea" id="ev_${exp.id}_${q.key}" placeholder="Escribe aquí...">${ed.evaluacion?.[q.key]||''}</textarea>
+        </div>`).join('');
+      return `<div class="exp-block">
+        <div class="exp-block-hdr" onclick="toggleExpBlock('${exp.id}')">
+          <div class="exp-block-num">${idx+1}.</div>
+          <div class="exp-block-text">${exp.text}</div>
+          <div class="exp-block-status">
+            <span class="exp-block-badge rel-badge ${badgeClass}" id="badge_${exp.id}">${badgeText}</span>
+            <span class="exp-block-arrow" id="arrow_${exp.id}">▾</span>
+          </div>
+        </div>
+        <div class="exp-block-body" id="expblock_${exp.id}">
+          <div class="exp-section" style="background:#fafafa;border-color:#eee;">
+            <div class="exp-section-title" style="color:${rel.color}">📌 Logro de la Exploración</div>
+            <div class="exp-radio">
+              <label><input type="radio" name="logro_${exp.id}" value="si" ${logro==='si'?'checked':''} onchange="setLogro('${rumboKey}','${relKey}','${exp.id}','si')"> SÍ</label>
+              <label><input type="radio" name="logro_${exp.id}" value="no" ${logro==='no'?'checked':''} onchange="setLogro('${rumboKey}','${relKey}','${exp.id}','no')"> NO</label>
+              <label><input type="radio" name="logro_${exp.id}" value="" ${!logro?'checked':''} onchange="setLogro('${rumboKey}','${relKey}','${exp.id}',null)"> Pendiente</label>
+            </div>
+            <div style="margin-top:8px">
+              <span class="form-label">Observación</span>
+              <input class="form-input" style="margin-top:4px" id="obs_${exp.id}" placeholder="Observación..." value="${ed.observacion||''}" oninput="setObs('${rumboKey}','${relKey}','${exp.id}',this.value)"/>
+            </div>
+          </div>
+          <div class="exp-section" style="border-color:${rel.color}33">
+            <div class="exp-section-title" style="color:${rel.color}">🗺️ Territorio</div>
+            <div class="form-group">
+              <span class="form-label">Conoce su potencial, sus límites y los acepta con responsabilidad</span>
+              <textarea class="form-textarea" id="ter_${exp.id}" placeholder="Describe el avance...">${ed.territorio||''}</textarea>
+            </div>
+          </div>
+          <div class="exp-section" style="border-color:${rel.color}33">
+            <div class="exp-section-title" style="color:${rel.color}">📝 Evaluación</div>
+            <div class="form-row">${evalFields}</div>
+          </div>
+          <div class="exp-section" style="border-color:${rel.color}33">
+            <div class="exp-section-title" style="color:${rel.color}">📋 Registro</div>
+            <div class="form-row">
+              <div class="form-group"><span class="form-label">Fecha de inicio</span><input class="form-input" type="date" id="fi_${exp.id}" value="${ed.fechaInicio||''}"></div>
+              <div class="form-group"><span class="form-label">Fecha final</span><input class="form-input" type="date" id="ff_${exp.id}" value="${ed.fechaFinal||''}"></div>
+            </div>
+            ${SESSION.role!=='scout'?`
+            <div class="form-group" style="margin-bottom:10px;margin-top:4px">
+              <span class="form-label">Comentarios generales</span>
+              <textarea class="form-textarea" id="com_${exp.id}" placeholder="Observaciones del scouter...">${ed.comentarios||''}</textarea>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><span class="form-label">Fecha de evaluación</span><input class="form-input" type="date" id="fe_${exp.id}" value="${ed.fechaEval||''}"></div>
+              <div class="form-group"><span class="form-label">Nombre Scouter</span><input class="form-input" id="sc_${exp.id}" value="${ed.scouter||''}" placeholder="Scouter responsable"></div>
+            </div>`:''}
+            <div class="cb-row" style="margin-top:6px">
+              <label class="cb-opt"><input type="checkbox" id="comp_${exp.id}" ${ed.completada?'checked':''} onchange="setCompletada('${rumboKey}','${relKey}','${exp.id}',this.checked)"><label>Exploración completada ✅</label></label>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:4px">
+            <button class="save-btn" style="background:${rel.color};font-size:12px;padding:8px 18px" onclick="saveExpData('${rumboKey}','${relKey}','${exp.id}')">💾 Guardar exploración</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+
+    return `<div class="rel-accordion">
+      <div class="rel-acc-hdr" style="background:${rel.colorBg}" onclick="toggleRelAcc('racc_${rumboKey}_${relKey}')">
+        <div class="rel-acc-left">
+          <span style="font-size:20px">${rel.emoji}</span>
+          <div>
+            <div class="rel-acc-title" style="color:${rel.color}">${rel.name}</div>
+            <div class="rel-acc-sub" style="color:${rel.color}">${exps.length} exploración${exps.length!==1?'es':''} · ${done}/${exps.length} registradas</div>
+          </div>
+        </div>
+        <span class="rel-acc-chevron" id="chev_${rumboKey}_${relKey}">▾</span>
+      </div>
+      <div class="rel-acc-body" id="racc_${rumboKey}_${relKey}">${expsHTML}</div>
+    </div>`;
+  }).join('');
+
+  showView('rumboform');
+  document.getElementById('rumboFormContent').innerHTML=`
+    <div class="rfv-wrap">
+      <button class="back-btn" onclick="selectScout('${scout.id}')">← Volver al perfil de ${scout.name}</button>
+      <div class="rfv-hdr">
+        <div class="rfv-emoji">${r.emoji}</div>
+        <div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:2px;color:var(--gris);text-transform:uppercase">Rumbo</div>
+          <div style="font-size:20px;font-weight:700;color:${r.color}">${r.name}</div>
+          <div style="font-size:12px;color:var(--gris)">${scout.name} · ${r.desc}</div>
+        </div>
+      </div>
+      ${relationsHTML}
+      <div style="background:#fff;border-radius:12px;padding:18px;box-shadow:0 2px 8px rgba(0,0,0,.07);margin-top:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <label class="cb-opt">
+          <input type="checkbox" id="rumbo_completed" ${rd.completed?'checked':''}>
+          <label style="font-size:14px;font-weight:700">Marcar Rumbo ${r.name} como completado ✅</label>
+        </label>
+        <div style="display:flex;gap:8px">
+          <button class="save-btn" style="background:${r.color}" onclick="saveRumboCompleted('${rumboKey}')">💾 Guardar estado del Rumbo</button>
+          <button class="btn-cancel" onclick="selectScout('${scout.id}')">Cancelar</button>
+        </div>
+      </div>
+      <div style="height:40px"></div>
+    </div>`;
+}
+
+function toggleRelAcc(id){
+  const parts=id.split('_');const relKey=parts[parts.length-1];const rumboKey=parts[parts.length-2];
+  const body=document.getElementById(id);const chev=document.getElementById(`chev_${rumboKey}_${relKey}`);
+  const isOpen=body.classList.contains('open');
+  body.classList.toggle('open',!isOpen);if(chev) chev.classList.toggle('open',!isOpen);
+}
+function toggleExpBlock(expId){
+  const body=document.getElementById(`expblock_${expId}`);const arrow=document.getElementById(`arrow_${expId}`);
+  const isOpen=body.classList.contains('open');
+  body.classList.toggle('open',!isOpen);if(arrow) arrow.classList.toggle('open',!isOpen);
+}
+function setLogro(rk,relKey,expId,val){
+  const scout=getScout(currentScoutId);if(!scout) return;
+  getExpData(scout,rk,relKey,expId).logro=val;
+  const badge=document.getElementById(`badge_${expId}`);
+  if(badge){badge.className='exp-block-badge rel-badge '+(val==='si'?'s-si':val==='no'?'s-no':'s-p');badge.textContent=val==='si'?'SÍ ✓':val==='no'?'NO':'Pendiente';}
+}
+function setObs(rk,relKey,expId,val){const scout=getScout(currentScoutId);if(!scout) return;getExpData(scout,rk,relKey,expId).observacion=val;}
+function setCompletada(rk,relKey,expId,val){const scout=getScout(currentScoutId);if(!scout) return;getExpData(scout,rk,relKey,expId).completada=val;}
+
+async function saveExpData(rumboKey,relKey,expId){
+  const scout=getScout(currentScoutId);if(!scout) return;
+  const ed=getExpData(scout,rumboKey,relKey,expId);
+  ed.territorio=document.getElementById(`ter_${expId}`).value;
+  EVAL_QUESTIONS.forEach(q=>{ed.evaluacion[q.key]=document.getElementById(`ev_${expId}_${q.key}`).value;});
+  ed.fechaInicio=document.getElementById(`fi_${expId}`).value;
+  ed.fechaFinal=document.getElementById(`ff_${expId}`).value;
+  // Campos exclusivos del scouter — solo se leen si el rol lo permite
+  if(SESSION.role!=='scout'){
+    ed.comentarios=document.getElementById(`com_${expId}`).value;
+    ed.fechaEval=document.getElementById(`fe_${expId}`).value;
+    ed.scouter=document.getElementById(`sc_${expId}`).value;
+  }
+  if(!scout.rumbos[rumboKey].savedAt) scout.rumbos[rumboKey].savedAt=new Date().toISOString().split('T')[0];
+  await saveScout(scout);
+  showToast('✅ Exploración guardada');
+}
+
+async function saveRumboCompleted(rumboKey){
+  const scout=getScout(currentScoutId);if(!scout) return;
+  if(!scout.rumbos[rumboKey]) scout.rumbos[rumboKey]={completed:false,savedAt:null,relaciones:{}};
+  scout.rumbos[rumboKey].completed=document.getElementById('rumbo_completed').checked;
+  scout.rumbos[rumboKey].savedAt=new Date().toISOString().split('T')[0];
+  await saveScout(scout);
+  showToast('✅ Estado del Rumbo guardado');
+  setTimeout(()=>selectScout(scout.id),500);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  ADD / DELETE SCOUT
+// ═══════════════════════════════════════════════════════════
+function openAddScout(){
+  document.getElementById('scoutModalTitle').textContent='Registrar nuevo Scout ⚜️';
+  document.getElementById('scoutModalSaveBtn').textContent='Registrar Scout';
+  document.getElementById('scoutModalSaveBtn').onclick=saveNewScout;
+  document.getElementById('newFecha').value=new Date().toISOString().split('T')[0];
+  document.getElementById('newName').value='';
+  document.getElementById('newEdad').value='';
+  document.getElementById('newPatrulla').value='';
+  document.getElementById('addScoutModal').classList.remove('hidden');
+}
+
+async function saveNewScout(){
+  const name=document.getElementById('newName').value.trim();
+  const edad=document.getElementById('newEdad').value;
+  const fecha=document.getElementById('newFecha').value;
+  const patrulla=document.getElementById('newPatrulla').value.trim();
+  if(!name){showToast('⚠️ Ingresa el nombre del scout');return;}
+  const scout={id:Date.now().toString(),name,edad,fechaIngreso:fecha,patrulla,rumbos:{}};
+  APP.scouts.push(scout);
+  await saveScout(scout);
+  closeModal('addScoutModal');
+  renderSidebar();
+  renderDashboard();
+  selectScout(scout.id);
+  showToast('✅ Scout registrado');
+}
+
+async function confirmDeleteScout(id){
+  const scout=getScout(id);
+  if(!scout) return;
+  if(!confirm(`¿Eliminar a ${scout.name} de la lista? Esta acción no se puede deshacer.`)) return;
+  APP.scouts=APP.scouts.filter(s=>s.id!==id);
+  await deleteScoutDB(id);
+  if(currentScoutId===id){
+    currentScoutId=null;
+    document.getElementById('scoutPerfilContent').innerHTML='<div class="no-sel"><div style="font-size:52px">⚜️</div><div>Selecciona un scout del panel izquierdo</div></div>';
+  }
+  renderSidebar();
+  renderDashboard();
+  showToast('🗑️ Scout eliminado');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  CONFIG — Rumbos + Relaciones + Exploraciones
+// ═══════════════════════════════════════════════════════════
+function renderConfig(){
+  const el=document.getElementById('configContent');
+  el.innerHTML=`
+    <div class="page-title">⚙️ Configuración</div>
+    <div class="page-sub" style="margin-bottom:22px">Gestiona Rumbos, Relaciones y Exploraciones</div>
+
+    <!-- RUMBOS SECTION -->
+    <div style="font-size:11px;font-weight:700;letter-spacing:2px;color:var(--gris);text-transform:uppercase;margin-bottom:12px;">Gestión de Rumbos</div>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:20px" id="rumbosConfigGrid">
+      ${Object.entries(APP.rumbos).map(([rk,r])=>`
+        <div class="rumbo-cfg-card" style="border-left-color:${r.color}">
+          <div class="cfg-card-hdr" style="background:${r.bg}">
+            <div class="cfg-card-title" style="color:${r.color}">${r.emoji} ${r.name}</div>
+          </div>
+          <div style="padding:10px 17px 14px">
+            <div style="font-size:12px;color:var(--gris);margin-bottom:8px">${r.desc}</div>
+            <div class="rumbo-cfg-actions">
+              <button class="rumbo-cfg-edit-btn" onclick="openEditRumbo('${rk}')">✏️ Editar</button>
+              <button class="rumbo-cfg-del-btn" onclick="confirmDeleteRumbo('${rk}')">🗑 Eliminar</button>
+            </div>
+          </div>
+        </div>`).join('')}
+    </div>
+    <button class="save-btn" style="background:var(--verde);margin-bottom:28px" onclick="openNewRumbo()">+ Nuevo Rumbo</button>
+
+    <!-- EXPLORACIONES SECTION -->
+    <div style="font-size:11px;font-weight:700;letter-spacing:2px;color:var(--gris);text-transform:uppercase;margin-bottom:12px;">Exploraciones por Rumbo</div>
+    <div class="cfg-grid" id="explCfgGrid">
+      ${Object.entries(APP.rumbos).map(([rk,r])=>`
+        <div class="cfg-card">
+          <div class="cfg-card-hdr" style="background:${r.bg}">
+            <div class="cfg-card-title" style="color:${r.color}">${r.emoji} ${r.name}</div>
+          </div>
+          <div class="cfg-card-body">
+            ${Object.entries(APP.relations).map(([relKey,rel])=>`
+              <div class="rel-cfg-row">
+                <div class="rel-cfg-name" style="color:${rel.color}">${rel.emoji} ${rel.name.replace('Relación ','')}</div>
+                <div class="exp-cfg-list">
+                  ${(APP.exploraciones[rk]&&APP.exploraciones[rk][relKey]||[]).map((exp,i)=>`
+                    <div class="exp-cfg-item">
+                      <div class="exp-cfg-text">${i+1}. ${exp.text}</div>
+                      <button class="exp-del-btn" onclick="deleteExp('${rk}','${relKey}','${exp.id}')">✕</button>
+                    </div>`).join('')}
+                  <div class="add-exp-row">
+                    <input class="add-exp-inp" id="inp_${rk}_${relKey}" placeholder="Nueva exploración..."/>
+                    <button class="add-exp-btn" onclick="addExp('${rk}','${relKey}')">+</button>
+                  </div>
+                </div>
+              </div>`).join('')}
+            <div style="margin-top:12px;padding-top:10px;border-top:2px dashed #eee;">
+              <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;color:var(--gris);text-transform:uppercase;margin-bottom:7px">Nueva relación en este rumbo</div>
+              <div class="add-rel-row">
+                <input class="add-rel-inp" id="newrel_${rk}" placeholder="Nombre de la relación..."/>
+                <button class="add-rel-btn" onclick="addRelToRumbo('${rk}')">+</button>
+              </div>
+            </div>
+          </div>
+        </div>`).join('')}
+    </div>
+
+    <!-- GLOBAL RELATION -->
+    <div style="background:#fff;border-radius:12px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,.07);margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--verde);margin-bottom:14px;">🌐 Agregar relación global (todos los rumbos)</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+        <div class="form-group" style="flex:1;min-width:150px"><span class="form-label">Nombre</span><input class="form-input" id="globalRelName" placeholder="Ej: Relación con la Patria"/></div>
+        <div class="form-group" style="width:72px"><span class="form-label">Emoji</span><input class="form-input" id="globalRelEmoji" placeholder="🌟" style="font-size:18px;text-align:center"/></div>
+        <button class="save-btn" style="background:var(--verde)" onclick="addGlobalRelation()">Agregar</button>
+      </div>
+    </div>
+    <button onclick="resetConfig()" style="padding:9px 16px;background:#fee2e2;color:#c0392b;border:none;border-radius:8px;font-family:'Josefin Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer">⚠️ Restablecer valores por defecto</button>`;
+}
+
+// ── Rumbo CRUD ──
+function openNewRumbo(){
+  editingRumboKey=null;
+  document.getElementById('rumboModalTitle').textContent='Nuevo Rumbo';
+  document.getElementById('rumboModalName').value='';
+  document.getElementById('rumboModalEmoji').value='';
+  document.getElementById('rumboModalDesc').value='';
+  document.getElementById('rumboModalColor').value='#1B6B3A';
+  document.getElementById('rumboModalColorPicker').value='#1B6B3A';
+  document.getElementById('rumboModal').classList.remove('hidden');
+}
+
+function openEditRumbo(rk){
+  editingRumboKey=rk;
+  const r=APP.rumbos[rk];
+  document.getElementById('rumboModalTitle').textContent=`Editar Rumbo — ${r.name}`;
+  document.getElementById('rumboModalName').value=r.name;
+  document.getElementById('rumboModalEmoji').value=r.emoji;
+  document.getElementById('rumboModalDesc').value=r.desc;
+  document.getElementById('rumboModalColor').value=r.color;
+  document.getElementById('rumboModalColorPicker').value=r.color;
+  document.getElementById('rumboModal').classList.remove('hidden');
+}
+
+async function saveRumboFromModal(){
+  const name=document.getElementById('rumboModalName').value.trim();
+  const emoji=document.getElementById('rumboModalEmoji').value.trim()||'⚜️';
+  const desc=document.getElementById('rumboModalDesc').value.trim();
+  const color=document.getElementById('rumboModalColor').value.trim()||'#1B6B3A';
+  if(!name){showToast('⚠️ Ingresa el nombre del rumbo');return;}
+  // Auto bg (lighten color with alpha overlay on white)
+  const idx=Object.keys(APP.rumbos).length%RUMBO_BGS.length;
+  const bg=RUMBO_BGS[idx];
+
+  if(editingRumboKey){
+    APP.rumbos[editingRumboKey]={...APP.rumbos[editingRumboKey],name,emoji,desc,color,bg};
+  } else {
+    const rk='rumbo_'+Date.now();
+    APP.rumbos[rk]={name,emoji,desc,color,bg};
+    // Init empty explorations for this rumbo
+    APP.exploraciones[rk]={};
+    Object.keys(APP.relations).forEach(relKey=>{ APP.exploraciones[rk][relKey]=[]; });
+  }
+  await saveConfig();
+  closeModal('rumboModal');
+  renderConfig();
+  renderDashboard();
+  showToast(editingRumboKey?'✅ Rumbo actualizado':'✅ Rumbo creado');
+}
+
+async function confirmDeleteRumbo(rk){
+  const r=APP.rumbos[rk];
+  if(!confirm(`¿Eliminar el Rumbo "${r.name}"? Se borrarán todas sus exploraciones configuradas.`)) return;
+  delete APP.rumbos[rk];
+  delete APP.exploraciones[rk];
+  await saveConfig();
+  renderConfig();
+  renderDashboard();
+  showToast('🗑️ Rumbo eliminado');
+}
+
+// ── Explorations CRUD ──
+async function addExp(rk,relKey){
+  const inp=document.getElementById(`inp_${rk}_${relKey}`);
+  const text=inp.value.trim();if(!text) return;
+  if(!APP.exploraciones[rk]) APP.exploraciones[rk]={};
+  if(!APP.exploraciones[rk][relKey]) APP.exploraciones[rk][relKey]=[];
+  APP.exploraciones[rk][relKey].push({id:'custom_'+Date.now(),text});
+  await saveConfig();showToast('✅ Exploración agregada');renderConfig();
+}
+
+async function deleteExp(rk,relKey,expId){
+  if(!APP.exploraciones[rk]?.[relKey]) return;
+  APP.exploraciones[rk][relKey]=APP.exploraciones[rk][relKey].filter(e=>e.id!==expId);
+  await saveConfig();showToast('🗑️ Eliminada');renderConfig();
+}
+
+async function addRelToRumbo(rk){
+  const inp=document.getElementById(`newrel_${rk}`);
+  const name=inp.value.trim();if(!name) return;
+  const relKey='custom_'+Date.now();
+  APP.relations[relKey]={name,emoji:'📌',color:'#666',colorBg:'#f5f5f5'};
+  Object.keys(APP.rumbos).forEach(r=>{if(!APP.exploraciones[r]) APP.exploraciones[r]={};APP.exploraciones[r][relKey]=[];});
+  await saveConfig();showToast(`✅ Relación "${name}" agregada`);renderConfig();
+}
+
+async function addGlobalRelation(){
+  const name=document.getElementById('globalRelName').value.trim();
+  const emoji=document.getElementById('globalRelEmoji').value.trim()||'📌';
+  if(!name) return;
+  const relKey='global_'+Date.now();
+  const colors=['#E53E3E','#D97706','#059669','#7C3AED','#DB2777','#0284C7'];
+  const bgs=['#FFF5F5','#FFFBEB','#F0FDF4','#F5F3FF','#FDF2F8','#F0F9FF'];
+  const idx=Object.keys(APP.relations).length%colors.length;
+  APP.relations[relKey]={name,emoji,color:colors[idx],colorBg:bgs[idx]};
+  Object.keys(APP.rumbos).forEach(r=>{if(!APP.exploraciones[r]) APP.exploraciones[r]={};APP.exploraciones[r][relKey]=[];});
+  await saveConfig();showToast(`✅ Relación global "${name}" creada`);renderConfig();
+}
+
+async function resetConfig(){
+  if(!confirm('¿Restablecer configuración a valores originales?')) return;
+  APP.rumbos=JSON.parse(JSON.stringify(DEFAULT_RUMBOS));
+  APP.exploraciones=JSON.parse(JSON.stringify(DEFAULT_EXPLORATIONS));
+  APP.relations=JSON.parse(JSON.stringify(DEFAULT_RELATIONS));
+  await saveConfig();showToast('🔄 Restablecido');renderConfig();renderDashboard();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════════════════════
+function showView(view){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+view).classList.add('active');
+  document.querySelectorAll('#topNav button').forEach(b=>b.classList.remove('active'));
+  const map={dashboard:0,scouts:1,scouters:2,config:3,rumboform:1};
+  const btns=document.querySelectorAll('#topNav button');
+  if(btns[map[view]]) btns[map[view]].classList.add('active');
+  if(view==='config') renderConfig();
+  if(view==='scouters') renderScouters();
+}
+
+function closeModal(id){ document.getElementById(id).classList.add('hidden'); }
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════
+async function init(){
+  
+  if(USE_FIREBASE){
+    await loadFirestore();
+  } else {
+    const local=loadLocal();
+    Object.assign(APP,local);
+  }
+}
+
+init();
+</script>
+</body>
+</html>
