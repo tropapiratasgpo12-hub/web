@@ -3,31 +3,38 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rumbos Scout — Registro de Avance</title>
+<title>Tropa Scout — Registro de Avance</title>
 <!-- Firebase v9 compat -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@300;400;600;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap');
-:root{--verde:#1B6B3A;--verde-claro:#2D8A50;--verde-bg:#EAF4EE;--ambar:#E8A020;--cafe:#6B4226;--crema:#F5F0E8;--hueso:#FAF7F2;--gris:#888;--texto:#2C2C2C;--rojo:#C0392B;}
+:root{
+  --verde:#1B6B3A;--verde-claro:#2D8A50;--verde-bg:#EAF4EE;
+  --ambar:#E8A020;--cafe:#6B4226;--crema:#F5F0E8;--hueso:#FAF7F2;
+  --gris:#888;--texto:#2C2C2C;--rojo:#C0392B;
+  --sidebar-w:268px;--topbar-h:54px;--bottom-nav-h:60px;
+}
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Josefin Sans',sans-serif;background:var(--crema);color:var(--texto);min-height:100vh;}
+html{-webkit-text-size-adjust:100%;}
+body{font-family:'Josefin Sans',sans-serif;background:var(--crema);color:var(--texto);min-height:100vh;overflow-x:hidden;}
 
 /* ── LOGIN ── */
-#loginScreen{position:fixed;inset:0;background:linear-gradient(135deg,#1B6B3A 0%,#0f3d21 100%);display:flex;align-items:center;justify-content:center;z-index:999;flex-direction:column;gap:0;}
+#loginScreen{position:fixed;inset:0;background:linear-gradient(135deg,#1B6B3A 0%,#0f3d21 100%);display:flex;align-items:center;justify-content:center;z-index:999;flex-direction:column;padding:16px;overflow-y:auto;}
 #loginScreen.hidden{display:none;}
-.login-card{background:#fff;border-radius:20px;padding:36px 38px;width:100%;max-width:380px;box-shadow:0 30px 80px rgba(0,0,0,.35);}
-.login-logo{text-align:center;margin-bottom:24px;}
-.login-logo .ll-icon{font-size:52px;display:block;margin-bottom:8px;}
-.login-logo h1{font-family:'Lora',serif;font-size:22px;color:var(--verde);font-style:italic;}
-.login-logo p{font-size:12px;color:var(--gris);margin-top:3px;letter-spacing:1px;}
-.role-tabs{display:flex;gap:0;border:2px solid #eee;border-radius:10px;overflow:hidden;margin-bottom:20px;}
+.login-card{background:#fff;border-radius:20px;padding:28px 24px;width:100%;max-width:400px;box-shadow:0 30px 80px rgba(0,0,0,.35);}
+.login-logo{text-align:center;margin-bottom:20px;}
+.login-logo .ll-icon{font-size:44px;display:block;margin-bottom:6px;}
+.login-logo h1{font-family:'Lora',serif;font-size:20px;color:var(--verde);font-style:italic;}
+.login-logo p{font-size:11px;color:var(--gris);margin-top:3px;letter-spacing:1px;}
+.role-tabs{display:flex;border:2px solid #eee;border-radius:10px;overflow:hidden;margin-bottom:16px;}
 .role-tab{flex:1;padding:9px;background:none;border:none;font-family:'Josefin Sans',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;color:var(--gris);cursor:pointer;transition:all .2s;}
 .role-tab.active{background:var(--verde);color:#fff;}
-.login-form{display:flex;flex-direction:column;gap:12px;}
-.login-input{padding:11px 14px;border:2px solid #e0e0e0;border-radius:8px;font-family:'Josefin Sans',sans-serif;font-size:14px;color:var(--texto);background:var(--hueso);transition:border-color .2s;}
+.login-form{display:flex;flex-direction:column;gap:11px;}
+.login-input{padding:11px 14px;border:2px solid #e0e0e0;border-radius:8px;font-family:'Josefin Sans',sans-serif;font-size:14px;color:var(--texto);background:var(--hueso);transition:border-color .2s;width:100%;}
 .login-input:focus{outline:none;border-color:var(--verde);background:#fff;}
-.login-btn{padding:12px;background:var(--verde);color:#fff;border:none;border-radius:8px;font-family:'Josefin Sans',sans-serif;font-size:14px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:background .2s;margin-top:4px;}
+.login-btn{padding:12px;background:var(--verde);color:#fff;border:none;border-radius:8px;font-family:'Josefin Sans',sans-serif;font-size:14px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:background .2s;margin-top:4px;width:100%;}
 .login-btn:hover{background:var(--verde-claro);}
 .login-sep{text-align:center;font-size:12px;color:var(--gris);position:relative;margin:4px 0;}
 .login-sep::before,.login-sep::after{content:'';position:absolute;top:50%;width:38%;height:1px;background:#eee;}
@@ -36,22 +43,29 @@ body{font-family:'Josefin Sans',sans-serif;background:var(--crema);color:var(--t
 .login-err.show{display:block;}
 
 /* ── TOPBAR ── */
-.topbar{background:var(--verde);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:54px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.25);}
-.topbar-brand{display:flex;align-items:center;gap:8px;font-size:17px;font-weight:700;color:#fff;letter-spacing:2px;}
-.topbar-right{display:flex;align-items:center;gap:8px;}
+.topbar{background:var(--verde);padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:var(--topbar-h);position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.25);}
+.topbar-brand{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700;color:#fff;letter-spacing:1.5px;min-width:0;}
+.topbar-brand span:first-child{font-size:20px;flex-shrink:0;}
+.topbar-brand-text{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.topbar-right{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+/* Desktop nav (hidden on mobile, shown via bottom nav) */
 .topbar-nav{display:flex;gap:2px;}
-.topbar-nav button{background:transparent;border:none;color:rgba(255,255,255,.75);padding:7px 13px;font-family:'Josefin Sans',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer;border-radius:6px;transition:all .2s;}
+.topbar-nav button{background:transparent;border:none;color:rgba(255,255,255,.75);padding:7px 11px;font-family:'Josefin Sans',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer;border-radius:6px;transition:all .2s;white-space:nowrap;}
 .topbar-nav button:hover,.topbar-nav button.active{background:rgba(255,255,255,.15);color:#fff;}
-.user-pill{display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.15);padding:5px 12px 5px 7px;border-radius:20px;cursor:pointer;}
-.user-pill-avatar{width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;}
-.user-pill-name{font-size:12px;font-weight:700;color:#fff;letter-spacing:.5px;}
+.user-pill{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.15);padding:4px 10px 4px 6px;border-radius:20px;}
+.user-pill-avatar{width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;}
+.user-pill-name{font-size:12px;font-weight:700;color:#fff;letter-spacing:.5px;max-width:100px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .user-pill-role{font-size:10px;color:rgba(255,255,255,.7);letter-spacing:1px;}
-.logout-btn{background:rgba(255,255,255,.12);border:none;color:rgba(255,255,255,.8);padding:6px 10px;border-radius:6px;font-family:'Josefin Sans',sans-serif;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.5px;}
+.logout-btn{background:rgba(255,255,255,.12);border:none;color:rgba(255,255,255,.8);padding:6px 10px;border-radius:6px;font-family:'Josefin Sans',sans-serif;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.5px;white-space:nowrap;}
 .logout-btn:hover{background:rgba(255,255,255,.22);color:#fff;}
+/* Hamburger — visible only on mobile */
+.hamburger-btn{display:none;background:rgba(255,255,255,.12);border:none;color:#fff;padding:7px 10px;border-radius:6px;cursor:pointer;font-size:18px;line-height:1;}
 
 /* ── LAYOUT ── */
-.app{display:flex;min-height:calc(100vh - 54px);}
-.sidebar{width:268px;flex-shrink:0;background:#fff;border-right:1px solid #ddd;display:flex;flex-direction:column;overflow-y:auto;}
+.app{display:flex;min-height:calc(100vh - var(--topbar-h));}
+
+/* ── SIDEBAR ── */
+.sidebar{width:var(--sidebar-w);flex-shrink:0;background:#fff;border-right:1px solid #ddd;display:flex;flex-direction:column;overflow-y:auto;transition:transform .3s ease;}
 .sidebar-section{padding:14px;border-bottom:1px solid #eee;}
 .sidebar-title{font-size:10px;font-weight:700;letter-spacing:2px;color:var(--gris);text-transform:uppercase;margin-bottom:9px;}
 .add-scout-btn{width:100%;padding:9px;background:var(--verde);color:#fff;border:none;border-radius:8px;font-family:'Josefin Sans',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:background .2s;}
@@ -64,67 +78,80 @@ body{font-family:'Josefin Sans',sans-serif;background:var(--crema);color:var(--t
 .scout-info{flex:1;min-width:0;}
 .scout-name{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .scout-sub{font-size:11px;color:var(--gris);}
-.scout-del-btn{background:none;border:none;color:#ccc;cursor:pointer;font-size:15px;padding:2px 4px;border-radius:4px;transition:color .2s;flex-shrink:0;}
+.scout-del-btn{background:none;border:none;color:#ccc;cursor:pointer;font-size:15px;padding:4px 6px;border-radius:4px;transition:color .2s;flex-shrink:0;min-width:28px;min-height:28px;}
 .scout-del-btn:hover{color:var(--rojo);}
+/* Overlay behind open sidebar on mobile */
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:98;}
+.sidebar-overlay.show{display:block;}
 
-.main{flex:1;overflow-y:auto;}
+/* ── MAIN ── */
+.main{flex:1;overflow-y:auto;min-width:0;}
 .view{display:none;}
 .view.active{display:block;}
 
+/* ── BOTTOM NAV (mobile only) ── */
+.bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;height:var(--bottom-nav-h);background:#fff;border-top:1px solid #ddd;z-index:97;padding:0 4px;}
+.bottom-nav-inner{display:flex;height:100%;align-items:stretch;}
+.bottom-nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:none;border:none;cursor:pointer;padding:4px 2px;border-top:3px solid transparent;transition:all .15s;font-family:'Josefin Sans',sans-serif;}
+.bottom-nav-btn .bn-icon{font-size:20px;line-height:1;}
+.bottom-nav-btn .bn-label{font-size:9px;font-weight:700;letter-spacing:.5px;color:var(--gris);text-transform:uppercase;}
+.bottom-nav-btn.active{border-top-color:var(--verde);}
+.bottom-nav-btn.active .bn-label{color:var(--verde);}
+
 /* ── DASHBOARD ── */
-.dashboard{padding:28px;max-width:980px;}
-.page-title{font-family:'Lora',serif;font-size:26px;color:var(--verde);font-style:italic;margin-bottom:4px;}
-.page-sub{color:var(--gris);font-size:13px;margin-bottom:24px;}
-.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px;}
-.stat-card{background:#fff;border-radius:11px;padding:18px;border-top:4px solid;box-shadow:0 2px 8px rgba(0,0,0,.06);text-align:center;}
-.stat-card .si{font-size:24px;margin-bottom:6px;}
-.stat-card .sn{font-size:24px;font-weight:700;}
-.stat-card .sl{font-size:11px;color:var(--gris);letter-spacing:1px;text-transform:uppercase;}
-.rumbo-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}
-.rumbo-card{background:#fff;border-radius:11px;padding:18px;box-shadow:0 2px 8px rgba(0,0,0,.06);border-left:5px solid;}
+.dashboard{padding:20px 16px;max-width:980px;}
+.page-title{font-family:'Lora',serif;font-size:22px;color:var(--verde);font-style:italic;margin-bottom:4px;}
+.page-sub{color:var(--gris);font-size:13px;margin-bottom:20px;}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;}
+.stat-card{background:#fff;border-radius:11px;padding:14px 10px;border-top:4px solid;box-shadow:0 2px 8px rgba(0,0,0,.06);text-align:center;}
+.stat-card .si{font-size:20px;margin-bottom:4px;}
+.stat-card .sn{font-size:20px;font-weight:700;}
+.stat-card .sl{font-size:10px;color:var(--gris);letter-spacing:1px;text-transform:uppercase;}
+.rumbo-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+.rumbo-card{background:#fff;border-radius:11px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.06);border-left:5px solid;}
 .rumbo-card-hdr{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
-.rc-emoji{font-size:30px;}
-.rc-title{font-size:15px;font-weight:700;}
+.rc-emoji{font-size:26px;}
+.rc-title{font-size:14px;font-weight:700;}
 .rc-sub{font-size:11px;color:var(--gris);}
 .prog-bar{height:6px;background:#eee;border-radius:3px;overflow:hidden;}
 .prog-fill{height:100%;border-radius:3px;transition:width .6s;}
 .rc-stats{display:flex;justify-content:space-between;margin-top:8px;font-size:11px;color:var(--gris);}
 
 /* ── SCOUTERS VIEW ── */
-.scouters-view{padding:28px;max-width:980px;}
-.scouters-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:20px;}
-.scouter-card{background:#fff;border-radius:12px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,.07);display:flex;flex-direction:column;align-items:center;gap:10px;position:relative;}
-.scouter-card-avatar{width:56px;height:56px;border-radius:50%;background:var(--verde);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#fff;}
-.scouter-card-name{font-size:15px;font-weight:700;text-align:center;}
+.scouters-view{padding:20px 16px;max-width:980px;}
+.scouters-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px;}
+.scouter-card{background:#fff;border-radius:12px;padding:18px;box-shadow:0 2px 8px rgba(0,0,0,.07);display:flex;flex-direction:column;align-items:center;gap:8px;position:relative;}
+.scouter-card-avatar{width:52px;height:52px;border-radius:50%;background:var(--verde);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#fff;}
+.scouter-card-name{font-size:14px;font-weight:700;text-align:center;}
 .scouter-card-role{font-size:11px;color:var(--gris);letter-spacing:1px;text-transform:uppercase;}
 .scouter-card-stats{font-size:12px;color:var(--gris);}
-.scouter-del-btn{position:absolute;top:10px;right:10px;background:none;border:none;color:#ccc;cursor:pointer;font-size:16px;padding:2px;transition:color .2s;}
+.scouter-del-btn{position:absolute;top:10px;right:10px;background:none;border:none;color:#ccc;cursor:pointer;font-size:16px;padding:4px;transition:color .2s;min-width:28px;min-height:28px;}
 .scouter-del-btn:hover{color:var(--rojo);}
 
 /* ── PERFIL HEADER ── */
-.perfil-header{padding:28px;color:#fff;position:relative;overflow:hidden;}
-.perfil-header::before{content:'';position:absolute;right:-20px;top:-20px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.06);}
-.ph-top{display:flex;align-items:center;gap:18px;margin-bottom:18px;}
-.ph-avatar{width:68px;height:68px;border-radius:50%;font-size:26px;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;border:3px solid rgba(255,255,255,.35);flex-shrink:0;}
-.ph-name{font-family:'Lora',serif;font-size:24px;font-weight:600;}
-.ph-sub{font-size:13px;opacity:.8;margin-top:2px;}
-.ph-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.2);padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;letter-spacing:1px;margin-top:7px;}
-.ph-meta{display:flex;gap:22px;flex-wrap:wrap;}
+.perfil-header{padding:20px 16px;color:#fff;position:relative;overflow:hidden;}
+.perfil-header::before{content:'';position:absolute;right:-20px;top:-20px;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,.06);}
+.ph-top{display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;}
+.ph-avatar{width:60px;height:60px;border-radius:50%;font-size:22px;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;border:3px solid rgba(255,255,255,.35);flex-shrink:0;}
+.ph-name{font-family:'Lora',serif;font-size:20px;font-weight:600;}
+.ph-sub{font-size:12px;opacity:.8;margin-top:2px;}
+.ph-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.2);padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:1px;margin-top:6px;}
+.ph-meta{display:flex;gap:16px;flex-wrap:wrap;}
 .ph-meta-item{font-size:12px;opacity:.85;}
-.ph-meta-item strong{display:block;font-size:17px;font-weight:700;opacity:1;}
-.perfil-body{padding:22px 28px;}
-.section-tabs{display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid #eee;overflow-x:auto;}
-.section-tab{padding:9px 18px;background:none;border:none;font-family:'Josefin Sans',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;color:var(--gris);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s;white-space:nowrap;}
+.ph-meta-item strong{display:block;font-size:15px;font-weight:700;opacity:1;}
+.perfil-body{padding:16px;}
+.section-tabs{display:flex;margin-bottom:16px;border-bottom:2px solid #eee;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.section-tab{padding:9px 16px;background:none;border:none;font-family:'Josefin Sans',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;color:var(--gris);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s;white-space:nowrap;}
 .section-tab:hover{color:var(--verde);}
 .section-tab.active{color:var(--verde);border-bottom-color:var(--verde);}
 .tab-content{display:none;}
 .tab-content.active{display:block;}
 
 /* RUMBOS GRID */
-.rumbos-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}
-.rumbo-entry{border-radius:12px;padding:18px;border:2px solid transparent;cursor:pointer;transition:all .2s;}
+.rumbos-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+.rumbo-entry{border-radius:12px;padding:16px;border:2px solid transparent;cursor:pointer;transition:all .2s;}
 .rumbo-entry:hover{transform:translateY(-1px);}
-.re-hdr{display:flex;align-items:center;gap:9px;margin-bottom:12px;}
+.re-hdr{display:flex;align-items:center;gap:9px;margin-bottom:10px;}
 .re-title{font-size:14px;font-weight:700;}
 .re-desc{font-size:11px;color:var(--gris);margin-top:1px;}
 .rel-rows{display:flex;flex-direction:column;}
@@ -140,7 +167,7 @@ body{font-family:'Josefin Sans',sans-serif;background:var(--crema);color:var(--t
 /* HISTORIAL */
 .hist-line{position:relative;padding-left:26px;}
 .hist-line::before{content:'';position:absolute;left:8px;top:0;bottom:0;width:2px;background:#ddd;}
-.hist-item{position:relative;margin-bottom:18px;}
+.hist-item{position:relative;margin-bottom:16px;}
 .hist-dot{position:absolute;left:-22px;top:4px;width:13px;height:13px;border-radius:50%;border:2px solid #fff;}
 .hist-card{background:#fff;border-radius:9px;padding:12px 14px;box-shadow:0 1px 5px rgba(0,0,0,.07);}
 .hist-date{font-size:10px;color:var(--gris);letter-spacing:.5px;margin-bottom:3px;}
@@ -148,105 +175,197 @@ body{font-family:'Josefin Sans',sans-serif;background:var(--crema);color:var(--t
 .hist-body{font-size:12px;color:#555;font-family:'Lora',serif;font-style:italic;}
 
 /* RUMBO FORM */
-.rfv-wrap{padding:24px 28px;max-width:900px;}
-.back-btn{display:flex;align-items:center;gap:5px;background:none;border:none;font-family:'Josefin Sans',sans-serif;font-size:12px;font-weight:700;color:var(--gris);cursor:pointer;letter-spacing:.5px;padding:0;margin-bottom:10px;transition:color .2s;}
+.rfv-wrap{padding:16px;max-width:900px;}
+.back-btn{display:flex;align-items:center;gap:5px;background:none;border:none;font-family:'Josefin Sans',sans-serif;font-size:12px;font-weight:700;color:var(--gris);cursor:pointer;letter-spacing:.5px;padding:0;margin-bottom:10px;transition:color .2s;min-height:36px;}
 .back-btn:hover{color:var(--verde);}
-.rfv-hdr{display:flex;align-items:center;gap:14px;margin-bottom:22px;padding-bottom:16px;border-bottom:2px solid #eee;}
-.rfv-emoji{font-size:42px;}
-.rel-accordion{margin-bottom:12px;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.07);}
-.rel-acc-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;cursor:pointer;user-select:none;transition:filter .15s;}
+.rfv-hdr{display:flex;align-items:center;gap:12px;margin-bottom:18px;padding-bottom:14px;border-bottom:2px solid #eee;}
+.rfv-emoji{font-size:36px;}
+.rel-accordion{margin-bottom:10px;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.07);}
+.rel-acc-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;cursor:pointer;user-select:none;transition:filter .15s;}
 .rel-acc-hdr:hover{filter:brightness(.96);}
 .rel-acc-left{display:flex;align-items:center;gap:10px;}
 .rel-acc-title{font-size:14px;font-weight:700;}
 .rel-acc-sub{font-size:11px;opacity:.75;margin-top:1px;}
-.rel-acc-chevron{font-size:14px;transition:transform .25s;}
+.rel-acc-chevron{font-size:14px;transition:transform .25s;flex-shrink:0;}
 .rel-acc-chevron.open{transform:rotate(180deg);}
 .rel-acc-body{background:#fff;display:none;}
 .rel-acc-body.open{display:block;}
 .exp-block{border-bottom:1px solid #f0f0f0;}
 .exp-block:last-child{border-bottom:none;}
-.exp-block-hdr{display:flex;align-items:center;gap:10px;padding:12px 18px;cursor:pointer;background:#fafafa;transition:background .15s;}
+.exp-block-hdr{display:flex;align-items:center;gap:8px;padding:12px 16px;cursor:pointer;background:#fafafa;transition:background .15s;min-height:48px;}
 .exp-block-hdr:hover{background:#f3f3f3;}
 .exp-block-num{font-size:12px;font-weight:700;color:var(--gris);width:20px;flex-shrink:0;}
-.exp-block-text{flex:1;font-size:13px;font-weight:600;}
-.exp-block-status{display:flex;align-items:center;gap:6px;}
-.exp-block-badge{font-size:10px;padding:2px 9px;border-radius:20px;font-weight:700;}
+.exp-block-text{flex:1;font-size:13px;font-weight:600;line-height:1.4;}
+.exp-block-status{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.exp-block-badge{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700;white-space:nowrap;}
 .exp-block-arrow{font-size:12px;color:var(--gris);transition:transform .2s;}
 .exp-block-arrow.open{transform:rotate(180deg);}
-.exp-block-body{display:none;padding:18px 20px;background:#fff;border-top:1px solid #f5f5f5;}
+.exp-block-body{display:none;padding:16px;background:#fff;border-top:1px solid #f5f5f5;}
 .exp-block-body.open{display:block;}
-.exp-section{margin-bottom:16px;padding:16px;border-radius:10px;border:1px solid #eee;}
-.exp-section-title{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:6px;}
+.exp-section{margin-bottom:14px;padding:14px;border-radius:10px;border:1px solid #eee;}
+.exp-section-title{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+
+/* FORMS */
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
 .form-group{display:flex;flex-direction:column;gap:5px;}
 .form-group.full{grid-column:1/-1;}
 .form-label{font-size:10px;font-weight:700;letter-spacing:1px;color:var(--gris);text-transform:uppercase;}
-.form-input,.form-textarea,.form-select{padding:8px 11px;border:2px solid #e0e0e0;border-radius:7px;font-family:'Josefin Sans',sans-serif;font-size:13px;color:var(--texto);background:var(--hueso);transition:border-color .2s;resize:vertical;}
+.form-input,.form-textarea,.form-select{padding:9px 12px;border:2px solid #e0e0e0;border-radius:7px;font-family:'Josefin Sans',sans-serif;font-size:14px;color:var(--texto);background:var(--hueso);transition:border-color .2s;resize:vertical;width:100%;-webkit-appearance:none;}
 .form-input:focus,.form-textarea:focus,.form-select:focus{outline:none;border-color:var(--verde);background:#fff;}
-.form-textarea{min-height:64px;}
-.cb-row{display:flex;gap:16px;align-items:center;}
-.cb-opt{display:flex;align-items:center;gap:5px;cursor:pointer;}
-.cb-opt input{cursor:pointer;accent-color:var(--verde);width:14px;height:14px;}
+.form-textarea{min-height:70px;}
+.cb-row{display:flex;gap:16px;align-items:center;flex-wrap:wrap;}
+.cb-opt{display:flex;align-items:center;gap:6px;cursor:pointer;}
+.cb-opt input{cursor:pointer;accent-color:var(--verde);width:16px;height:16px;flex-shrink:0;}
 .cb-opt label{font-size:13px;cursor:pointer;}
 .exp-radio{display:flex;gap:14px;flex-wrap:wrap;}
-.exp-radio label{display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;}
-.exp-radio input{cursor:pointer;accent-color:var(--verde);}
-.save-btn{padding:10px 24px;color:#fff;border:none;border-radius:8px;font-family:'Josefin Sans',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:filter .2s;}
+.exp-radio label{display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer;padding:4px 0;}
+.exp-radio input{cursor:pointer;accent-color:var(--verde);width:16px;height:16px;flex-shrink:0;}
+.save-btn{padding:11px 22px;color:#fff;border:none;border-radius:8px;font-family:'Josefin Sans',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:filter .2s;-webkit-tap-highlight-color:transparent;}
 .save-btn:hover{filter:brightness(1.1);}
-.btn-cancel{padding:10px 18px;background:#eee;border:none;border-radius:8px;font-family:'Josefin Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;}
-.btn-danger{padding:10px 18px;background:#fee2e2;color:var(--rojo);border:none;border-radius:8px;font-family:'Josefin Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;}
+.btn-cancel{padding:11px 18px;background:#eee;border:none;border-radius:8px;font-family:'Josefin Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;}
+.btn-danger{padding:11px 18px;background:#fee2e2;color:var(--rojo);border:none;border-radius:8px;font-family:'Josefin Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;}
 
 /* CONFIG */
-.config-view{padding:28px;max-width:980px;}
-.cfg-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-bottom:24px;}
+.config-view{padding:20px 16px;max-width:980px;}
+.cfg-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:22px;}
 .cfg-card{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.07);overflow:hidden;}
-.cfg-card-hdr{padding:13px 17px;display:flex;align-items:center;justify-content:space-between;}
+.cfg-card-hdr{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;}
 .cfg-card-title{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px;}
-.cfg-card-body{padding:0 17px 14px;}
+.cfg-card-body{padding:0 16px 12px;}
 .rel-cfg-row{padding:8px 0;border-bottom:1px solid #f0f0f0;display:flex;align-items:flex-start;gap:8px;}
 .rel-cfg-row:last-child{border-bottom:none;}
 .rel-cfg-name{font-size:11px;font-weight:700;min-width:80px;padding-top:2px;}
-.exp-cfg-list{flex:1;}
-.exp-cfg-item{display:flex;align-items:center;gap:5px;padding:2px 0;}
-.exp-cfg-text{flex:1;font-size:11px;color:#444;}
-.exp-del-btn{background:none;border:none;color:#ccc;cursor:pointer;font-size:13px;transition:color .2s;padding:0 3px;}
+.exp-cfg-list{flex:1;min-width:0;}
+.exp-cfg-item{display:flex;align-items:center;gap:5px;padding:3px 0;}
+.exp-cfg-text{flex:1;font-size:11px;color:#444;min-width:0;word-break:break-word;}
+.exp-del-btn{background:none;border:none;color:#ccc;cursor:pointer;font-size:14px;transition:color .2s;padding:2px 4px;flex-shrink:0;min-width:24px;min-height:24px;}
 .exp-del-btn:hover{color:#e53e3e;}
 .add-exp-row{display:flex;gap:5px;margin-top:6px;}
-.add-exp-inp{flex:1;padding:5px 9px;border:1.5px solid #ddd;border-radius:5px;font-family:'Josefin Sans',sans-serif;font-size:11px;}
+.add-exp-inp{flex:1;padding:6px 9px;border:1.5px solid #ddd;border-radius:5px;font-family:'Josefin Sans',sans-serif;font-size:12px;min-width:0;}
 .add-exp-inp:focus{outline:none;border-color:var(--verde);}
-.add-exp-btn{padding:5px 10px;background:var(--verde);color:#fff;border:none;border-radius:5px;font-family:'Josefin Sans',sans-serif;font-size:11px;font-weight:700;cursor:pointer;}
+.add-exp-btn{padding:6px 10px;background:var(--verde);color:#fff;border:none;border-radius:5px;font-family:'Josefin Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0;}
 .add-rel-row{display:flex;gap:8px;margin-top:10px;}
-.add-rel-inp{flex:1;padding:7px 11px;border:2px solid #ddd;border-radius:7px;font-family:'Josefin Sans',sans-serif;font-size:12px;}
+.add-rel-inp{flex:1;padding:8px 11px;border:2px solid #ddd;border-radius:7px;font-family:'Josefin Sans',sans-serif;font-size:13px;min-width:0;}
 .add-rel-inp:focus{outline:none;border-color:var(--verde);}
-.add-rel-btn{padding:7px 13px;background:var(--verde);color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Josefin Sans',sans-serif;}
-/* Rumbo config cards */
+.add-rel-btn{padding:8px 12px;background:var(--verde);color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Josefin Sans',sans-serif;flex-shrink:0;}
 .rumbo-cfg-card{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.07);overflow:hidden;border-left:5px solid;}
-.rumbo-cfg-actions{display:flex;gap:6px;margin-top:8px;}
-.rumbo-cfg-edit-btn{padding:4px 10px;background:#EAF4EE;color:var(--verde);border:none;border-radius:6px;font-family:'Josefin Sans',sans-serif;font-size:11px;font-weight:700;cursor:pointer;}
-.rumbo-cfg-del-btn{padding:4px 10px;background:#fee2e2;color:var(--rojo);border:none;border-radius:6px;font-family:'Josefin Sans',sans-serif;font-size:11px;font-weight:700;cursor:pointer;}
+.rumbo-cfg-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
+.rumbo-cfg-edit-btn{padding:6px 12px;background:#EAF4EE;color:var(--verde);border:none;border-radius:6px;font-family:'Josefin Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;}
+.rumbo-cfg-del-btn{padding:6px 12px;background:#fee2e2;color:var(--rojo);border:none;border-radius:6px;font-family:'Josefin Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;}
 
 /* MODAL */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:200;padding:16px;}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center;z-index:200;padding:0;}
 .modal-overlay.hidden{display:none;}
-.modal{background:#fff;border-radius:14px;padding:26px;width:100%;max-width:440px;box-shadow:0 20px 60px rgba(0,0,0,.2);max-height:90vh;overflow-y:auto;}
-.modal-title{font-family:'Lora',serif;font-size:19px;color:var(--verde);margin-bottom:18px;font-style:italic;}
-.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;}
-.btn-cancel2{padding:9px 18px;background:#eee;border:none;border-radius:8px;font-family:'Josefin Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;}
-.btn-primary{padding:9px 22px;background:var(--verde);color:#fff;border:none;border-radius:8px;font-family:'Josefin Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;}
+.modal{background:#fff;border-radius:20px 20px 0 0;padding:24px 20px 32px;width:100%;max-width:520px;box-shadow:0 -10px 40px rgba(0,0,0,.2);max-height:92vh;overflow-y:auto;}
+.modal-title{font-family:'Lora',serif;font-size:18px;color:var(--verde);margin-bottom:16px;font-style:italic;}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap;}
+.btn-cancel2{padding:10px 18px;background:#eee;border:none;border-radius:8px;font-family:'Josefin Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;}
+.btn-primary{padding:10px 22px;background:var(--verde);color:#fff;border:none;border-radius:8px;font-family:'Josefin Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;}
 .btn-primary:hover{background:var(--verde-claro);}
 
-.toast{position:fixed;bottom:22px;right:22px;background:var(--verde);color:#fff;padding:11px 18px;border-radius:9px;font-size:13px;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.2);transform:translateY(80px);opacity:0;transition:all .3s;z-index:500;}
-.toast.show{transform:translateY(0);opacity:1;}
+/* TOAST */
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--verde);color:#fff;padding:11px 20px;border-radius:9px;font-size:13px;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.2);opacity:0;transition:all .3s;z-index:500;white-space:nowrap;}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+
 .empty-state{text-align:center;padding:50px 20px;color:var(--gris);}
 .empty-state .ei{font-size:44px;margin-bottom:10px;}
 .empty-state h3{font-family:'Lora',serif;font-style:italic;color:var(--cafe);margin-bottom:5px;}
-.no-sel{display:flex;align-items:center;justify-content:center;height:100%;min-height:400px;flex-direction:column;gap:10px;color:var(--gris);font-family:'Lora',serif;font-style:italic;}
-.firebase-badge{font-size:10px;color:rgba(255,255,255,.5);letter-spacing:.5px;margin-left:8px;}
-.loading-bar{position:fixed;top:54px;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--verde-claro),var(--ambar));z-index:99;transform:scaleX(0);transform-origin:left;transition:transform .4s;}
+.no-sel{display:flex;align-items:center;justify-content:center;height:100%;min-height:300px;flex-direction:column;gap:10px;color:var(--gris);font-family:'Lora',serif;font-style:italic;}
+
+/* LOGIN EXTRAS */
+.login-link{text-align:center;font-size:12px;color:var(--gris);margin-top:6px;}
+.login-link a{color:var(--verde);font-weight:700;cursor:pointer;text-decoration:none;}
+.login-link a:hover{text-decoration:underline;}
+.login-spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.firebase-badge{font-size:10px;color:rgba(255,255,255,.5);letter-spacing:.5px;margin-left:6px;}
+
+/* SCOUTER SCOUT LIST */
+.scouter-scouts-list{width:100%;margin-top:8px;border-top:1px solid #eee;padding-top:8px;}
+.scouter-scout-pill{display:flex;align-items:center;gap:7px;padding:5px 0;font-size:12px;color:var(--texto);cursor:pointer;}
+.scouter-scout-pill:hover{color:var(--verde);}
+.scouter-scout-pill-av{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;flex-shrink:0;}
+.scouter-section-label{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gris);margin-bottom:4px;text-align:center;}
+
+/* LOADING BAR */
+.loading-bar{position:fixed;top:var(--topbar-h);left:0;right:0;height:3px;background:linear-gradient(90deg,var(--verde-claro),var(--ambar));z-index:99;transform:scaleX(0);transform-origin:left;transition:transform .4s;}
 .loading-bar.active{transform:scaleX(1);}
-::-webkit-scrollbar{width:5px;}
+
+::-webkit-scrollbar{width:4px;}
 ::-webkit-scrollbar-thumb{background:#ccc;border-radius:3px;}
-@media(max-width:900px){.scouters-grid{grid-template-columns:repeat(2,1fr);}.stats-grid{grid-template-columns:repeat(2,1fr);}.rumbo-cards,.rumbos-grid,.cfg-grid{grid-template-columns:1fr;}.form-row{grid-template-columns:1fr;}.sidebar{width:220px;}}
+
+/* ════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS
+════════════════════════════════════════ */
+
+/* ── Tablet: 601px – 900px ── */
+@media(max-width:900px){
+  .scouters-grid{grid-template-columns:repeat(2,1fr);}
+  .stats-grid{grid-template-columns:repeat(2,1fr);}
+  .rumbo-cards{grid-template-columns:1fr 1fr;}
+  .sidebar{width:240px;}
+  .topbar-nav{display:none;}   /* nav moves to bottom bar */
+  .hamburger-btn{display:flex;align-items:center;justify-content:center;}
+  .bottom-nav{display:flex;}
+  .main{padding-bottom:var(--bottom-nav-h);}
+  /* On tablet the sidebar overlays */
+  .sidebar{position:fixed;top:var(--topbar-h);left:0;bottom:0;z-index:99;transform:translateX(-100%);width:280px;}
+  .sidebar.open{transform:translateX(0);}
+  .toast{bottom:calc(var(--bottom-nav-h) + 12px);}
+}
+
+/* ── Mobile: ≤600px ── */
+@media(max-width:600px){
+  :root{--topbar-h:50px;--bottom-nav-h:58px;}
+  .topbar{padding:0 12px;}
+  .topbar-brand{font-size:13px;gap:6px;}
+  .topbar-brand span:first-child{font-size:18px;}
+  .firebase-badge{display:none;}
+  .user-pill-name,.user-pill-role{display:none;}
+  .user-pill{padding:4px;}
+  .logout-btn{font-size:10px;padding:5px 8px;}
+
+  .dashboard{padding:14px 12px;}
+  .page-title{font-size:19px;}
+  .stats-grid{grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:18px;}
+  .stat-card{padding:12px 8px;}
+  .stat-card .sn{font-size:18px;}
+  .stat-card .si{font-size:18px;}
+  .rumbo-cards{grid-template-columns:1fr;}
+  .rumbo-card{padding:14px;}
+
+  .scouters-view{padding:14px 12px;}
+  .scouters-grid{grid-template-columns:1fr;}
+
+  .perfil-header{padding:16px 12px;}
+  .ph-avatar{width:50px;height:50px;font-size:18px;}
+  .ph-name{font-size:17px;}
+  .ph-meta{gap:12px;}
+  .ph-meta-item strong{font-size:14px;}
+  .perfil-body{padding:12px;}
+
+  .rumbos-grid{grid-template-columns:1fr;}
+  .rumbo-entry{padding:14px;}
+
+  .rfv-wrap{padding:12px;}
+  .rfv-emoji{font-size:28px;}
+  .exp-block-body{padding:12px;}
+  .exp-section{padding:12px;}
+
+  .config-view{padding:14px 12px;}
+  .cfg-grid{grid-template-columns:1fr;}
+
+  .form-row{grid-template-columns:1fr;}
+  .modal{padding:20px 16px 28px;}
+  .modal-title{font-size:16px;}
+  .modal-actions{justify-content:stretch;}
+  .modal-actions button{flex:1;}
+
+  /* Login card on very small screens */
+  .login-card{padding:22px 18px;}
+  .login-logo .ll-icon{font-size:36px;}
+  .login-logo h1{font-size:18px;}
+}
 </style>
 </head>
 <body>
@@ -258,20 +377,58 @@ body{font-family:'Josefin Sans',sans-serif;background:var(--crema);color:var(--t
 <div id="loginScreen">
   <div class="login-card">
     <div class="login-logo">
-      <span class="ll-icon">⚜️</span>
-      <h1>Rumbos Scout</h1>
+      <span class="ll-icon"><img src="./Pirata.png"></span>
+      <h1>Tropa Scout</h1>
       <p>REGISTRO DE AVANCE</p>
     </div>
+
+    <!-- ROLE TABS: Scouter / Scout -->
     <div class="role-tabs">
       <button class="role-tab active" onclick="setLoginRole('scouter',this)">🧭 Scouter</button>
       <button class="role-tab" onclick="setLoginRole('scout',this)">🐾 Scout</button>
     </div>
-    <div class="login-form">
+
+    <!-- SCOUTER LOGIN -->
+    <div id="scouterLoginForm" class="login-form">
       <input class="login-input" id="loginUser" placeholder="Nombre de usuario" autocomplete="username"/>
       <input class="login-input" id="loginPass" type="password" placeholder="Contraseña" autocomplete="current-password"/>
       <div class="login-err" id="loginErr">Usuario o contraseña incorrectos</div>
-      <button class="login-btn" onclick="doLogin()">Ingresar</button>
+      <button class="login-btn" id="loginBtn" onclick="doLogin()">Ingresar</button>
     </div>
+
+    <!-- SCOUT PANEL: Login o Registrar -->
+    <div id="scoutLoginForm" style="display:none">
+      <!-- Sub-tabs: Ingresar / Registrarse -->
+      <div style="display:flex;gap:0;border:1.5px solid #eee;border-radius:8px;overflow:hidden;margin-bottom:16px;">
+        <button id="scoutTabLogin" style="flex:1;padding:8px;background:var(--verde);border:none;color:#fff;font-family:'Josefin Sans',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer;" onclick="switchScoutTab('login')">Ingresar</button>
+        <button id="scoutTabReg" style="flex:1;padding:8px;background:none;border:none;color:var(--gris);font-family:'Josefin Sans',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer;" onclick="switchScoutTab('register')">Registrarse</button>
+      </div>
+
+      <!-- Scout: Ingresar -->
+      <div id="scoutSignInPanel" class="login-form">
+        <input class="login-input" id="scoutEmail" placeholder="Correo electrónico" type="email" autocomplete="email"/>
+        <input class="login-input" id="scoutPassLogin" type="password" placeholder="Contraseña" autocomplete="current-password"/>
+        <div class="login-err" id="scoutLoginErr">Correo o contraseña incorrectos</div>
+        <button class="login-btn" id="scoutLoginBtn" onclick="doScoutLogin()">Ingresar</button>
+      </div>
+
+      <!-- Scout: Registrarse -->
+      <div id="scoutRegPanel" style="display:none">
+        <div class="login-form">
+          <input class="login-input" id="regName" placeholder="Nombre completo" autocomplete="name"/>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <input class="login-input" id="regEdad" type="number" placeholder="Edad" min="10" max="21"/>
+            <input class="login-input" id="regFecha" type="date"/>
+          </div>
+          <input class="login-input" id="regPatrulla" placeholder="Nombre de la Patrulla"/>
+          <input class="login-input" id="regEmail" type="email" placeholder="Correo electrónico" autocomplete="email"/>
+          <input class="login-input" id="regPass" type="password" placeholder="Contraseña (mín. 6 caracteres)" autocomplete="new-password"/>
+          <div class="login-err" id="regErr">Error al registrarse</div>
+          <button class="login-btn" id="regBtn" onclick="doScoutRegister()">Registrar Scout</button>
+        </div>
+      </div>
+    </div>
+
     <div style="margin-top:14px;text-align:center;font-size:11px;color:var(--gris);">
       🔥 Conectado a Firebase · Datos en tiempo real
     </div>
@@ -280,7 +437,11 @@ body{font-family:'Josefin Sans',sans-serif;background:var(--crema);color:var(--t
 
 <!-- ═══ APP ═══ -->
 <div class="topbar" id="mainTopbar" style="display:none">
-  <div class="topbar-brand"><span>⚜️</span> RUMBOS SCOUT <span class="firebase-badge">🔥 Firebase</span></div>
+  <div class="topbar-brand">
+    <span>⚜️</span>
+    <span class="topbar-brand-text">TROPA SCOUT</span>
+    <span class="firebase-badge">🔥</span>
+  </div>
   <div class="topbar-right">
     <div class="topbar-nav" id="topNav"></div>
     <div class="user-pill" id="userPill">
@@ -291,8 +452,12 @@ body{font-family:'Josefin Sans',sans-serif;background:var(--crema);color:var(--t
       </div>
     </div>
     <button class="logout-btn" onclick="doLogout()">Salir</button>
+    <button class="hamburger-btn" id="hamburgerBtn" onclick="toggleSidebar()">☰</button>
   </div>
 </div>
+
+<!-- Sidebar overlay (mobile) -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 
 <div class="app" id="mainApp" style="display:none">
   <div class="sidebar" id="mainSidebar" style="display:none">
@@ -345,6 +510,9 @@ body{font-family:'Josefin Sans',sans-serif;background:var(--crema);color:var(--t
     </div>
   </div>
 </div>
+
+<!-- BOTTOM NAV (mobile only — injected by buildNav) -->
+<nav class="bottom-nav" id="bottomNav"></nav>
 
 <!-- MODAL ADD/EDIT SCOUT -->
 <div class="modal-overlay hidden" id="addScoutModal">
@@ -455,30 +623,75 @@ const FIREBASE_CONFIG = {
   storageBucket: "registroavancescout.firebasestorage.app",
   messagingSenderId: "578863558087",
   appId: "1:578863558087:web:3c81b28533d4cac7993de2"
-  
-  
 };
 
 // ── Inicializar Firebase (con fallback a localStorage si no está configurado) ──
 let db = null;
+let auth = null;
 let USE_FIREBASE = false;
 
+// Listeners de tiempo real — guardamos las funciones unsubscribe para limpiarlas al logout
+let unsubScouts = null;
+let unsubScouters = null;
+let unsubConfig = null;
+
 try {
-  debugger;
   firebase.initializeApp(FIREBASE_CONFIG);
-  db = firebase.firestore();
-  // Quick ping to check if credentials are valid
-  USE_FIREBASE = FIREBASE_CONFIG.apiKey !== "123";
+  db   = firebase.firestore();
+  auth = firebase.auth();
+  USE_FIREBASE = FIREBASE_CONFIG.apiKey !== "TU_API_KEY";
 } catch(e) {
   console.warn("Firebase no configurado, usando localStorage.");
 }
 
 // ── Colecciones Firestore ──
 const COL = {
-  scouts:    () => db.collection('scouts'),
-  scouters:  () => db.collection('scouters'),
-  config:    () => db.collection('config'),
+  scouts:   () => db.collection('scouts'),
+  scouters: () => db.collection('scouters'),
+  config:   () => db.collection('config'),
 };
+
+// ── Activar listeners en tiempo real ──
+function startRealtimeListeners(){
+  if(!USE_FIREBASE) return;
+
+  // Config (rumbos, relaciones, exploraciones)
+  unsubConfig = COL.config().doc('main').onSnapshot(snap=>{
+    if(!snap.exists) return;
+    const c = snap.data();
+    APP.rumbos        = c.rumbos        || JSON.parse(JSON.stringify(DEFAULT_RUMBOS));
+    APP.exploraciones = c.exploraciones || JSON.parse(JSON.stringify(DEFAULT_EXPLORATIONS));
+    APP.relations     = c.relations     || JSON.parse(JSON.stringify(DEFAULT_RELATIONS));
+    // Re-render affected views without losing current scout selection
+    if(document.getElementById('view-dashboard').classList.contains('active')) renderDashboard();
+    if(document.getElementById('view-config').classList.contains('active'))    renderConfig();
+  }, err=>console.error('Config listener error:',err));
+
+  // Scouts — se actualiza automáticamente cuando cualquier scouter edita datos
+  unsubScouts = COL.scouts().onSnapshot(snap=>{
+    APP.scouts = snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderSidebar();
+    if(document.getElementById('view-dashboard').classList.contains('active')) renderDashboard();
+    if(document.getElementById('view-scouters').classList.contains('active'))  renderScouters();
+    // Si el scout activo fue actualizado, refresca su perfil
+    if(currentScoutId){
+      const current = APP.scouts.find(s=>s.id===currentScoutId);
+      if(current && document.getElementById('view-scouts').classList.contains('active')) renderPerfilScout();
+    }
+  }, err=>console.error('Scouts listener error:',err));
+
+  // Scouters
+  unsubScouters = COL.scouters().onSnapshot(snap=>{
+    APP.scouters = snap.docs.map(d=>({id:d.id,...d.data()}));
+    if(document.getElementById('view-scouters').classList.contains('active')) renderScouters();
+  }, err=>console.error('Scouters listener error:',err));
+}
+
+function stopRealtimeListeners(){
+  if(unsubConfig)   { unsubConfig();   unsubConfig=null; }
+  if(unsubScouts)   { unsubScouts();   unsubScouts=null; }
+  if(unsubScouters) { unsubScouters(); unsubScouters=null; }
+}
 
 // ═══════════════════════════════════════════════════════════
 //  DEFAULT DATA
@@ -579,38 +792,34 @@ function saveLocal(){ localStorage.setItem('scouts_app_v4',JSON.stringify(APP));
 async function loadFirestore(){
   try{
     loading(true);
-    // Load config doc
+    // One-time load on startup — after this, onSnapshot listeners keep data fresh
     const cfgDoc = await COL.config().doc('main').get();
     if(cfgDoc.exists){
       const c = cfgDoc.data();
-      APP.rumbos      = c.rumbos      || JSON.parse(JSON.stringify(DEFAULT_RUMBOS));
+      APP.rumbos        = c.rumbos        || JSON.parse(JSON.stringify(DEFAULT_RUMBOS));
       APP.exploraciones = c.exploraciones || JSON.parse(JSON.stringify(DEFAULT_EXPLORATIONS));
-      APP.relations   = c.relations   || JSON.parse(JSON.stringify(DEFAULT_RELATIONS));
+      APP.relations     = c.relations     || JSON.parse(JSON.stringify(DEFAULT_RELATIONS));
     } else {
-      APP.rumbos      = JSON.parse(JSON.stringify(DEFAULT_RUMBOS));
+      APP.rumbos        = JSON.parse(JSON.stringify(DEFAULT_RUMBOS));
       APP.exploraciones = JSON.parse(JSON.stringify(DEFAULT_EXPLORATIONS));
-      APP.relations   = JSON.parse(JSON.stringify(DEFAULT_RELATIONS));
+      APP.relations     = JSON.parse(JSON.stringify(DEFAULT_RELATIONS));
       await COL.config().doc('main').set({ rumbos:APP.rumbos, exploraciones:APP.exploraciones, relations:APP.relations });
     }
-    // Load scouts
     const scoutsSnap = await COL.scouts().get();
     APP.scouts = scoutsSnap.docs.map(d=>({id:d.id,...d.data()}));
     if(!APP.scouts.length){
-      for(const s of DEMO_SCOUTS){
-        await COL.scouts().doc(s.id).set(s);
-      }
+      for(const s of DEMO_SCOUTS){ await COL.scouts().doc(s.id).set(s); }
       APP.scouts = [...DEMO_SCOUTS];
     }
-    // Load scouters
     const scoutersSnap = await COL.scouters().get();
     APP.scouters = scoutersSnap.docs.map(d=>({id:d.id,...d.data()}));
     if(!APP.scouters.length){
-      for(const s of DEMO_SCOUTERS){
-        await COL.scouters().doc(s.id).set(s);
-      }
+      for(const s of DEMO_SCOUTERS){ await COL.scouters().doc(s.id).set(s); }
       APP.scouters = [...DEMO_SCOUTERS];
     }
     loading(false);
+    // Start real-time listeners AFTER initial load
+    startRealtimeListeners();
   }catch(e){
     console.error('Firestore error:',e);
     loading(false);
@@ -665,40 +874,142 @@ function loading(on){ document.getElementById('loadingBar').classList.toggle('ac
 //  AUTH / LOGIN
 // ═══════════════════════════════════════════════════════════
 let loginRole = 'scouter';
-function setLoginRole(role,btn){
-  loginRole=role;
+
+function setLoginRole(role, btn){
+  loginRole = role;
   document.querySelectorAll('.role-tab').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
+  document.getElementById('scouterLoginForm').style.display = role==='scouter' ? 'flex' : 'none';
+  document.getElementById('scoutLoginForm').style.display   = role==='scout'   ? 'block' : 'none';
 }
 
-function doLogin(){
+function switchScoutTab(tab){
+  const isLogin = tab === 'login';
+  document.getElementById('scoutTabLogin').style.background = isLogin ? 'var(--verde)' : 'none';
+  document.getElementById('scoutTabLogin').style.color      = isLogin ? '#fff' : 'var(--gris)';
+  document.getElementById('scoutTabReg').style.background   = !isLogin ? 'var(--verde)' : 'none';
+  document.getElementById('scoutTabReg').style.color        = !isLogin ? '#fff' : 'var(--gris)';
+  document.getElementById('scoutSignInPanel').style.display = isLogin ? 'block' : 'none';
+  document.getElementById('scoutRegPanel').style.display    = !isLogin ? 'block' : 'none';
+}
+
+function setBtnLoading(btnId, on, defaultText){
+  const btn = document.getElementById(btnId);
+  if(!btn) return;
+  btn.disabled = on;
+  btn.innerHTML = on ? `<span class="login-spinner"></span>Procesando...` : defaultText;
+}
+
+// ── Scouter / Admin login (usuario + contraseña en Firestore) ──
+async function doLogin(){
   const user = document.getElementById('loginUser').value.trim();
   const pass = document.getElementById('loginPass').value;
   const err  = document.getElementById('loginErr');
+  err.classList.remove('show');
+  setBtnLoading('loginBtn', true, 'Ingresar');
 
   // Admin check
-  if(user===ADMIN.user && pass===ADMIN.pass){
-    SESSION={user,name:ADMIN.name,role:'admin',id:'admin'};
+  if(user === ADMIN.user && pass === ADMIN.pass){
+    SESSION = {user, name:ADMIN.name, role:'admin', id:'admin'};
+    setBtnLoading('loginBtn', false, 'Ingresar');
     startApp();
     return;
   }
 
-  if(loginRole==='scouter'){
-    const found = APP.scouters.find(s=>s.user===user && s.pass===pass);
-    if(found){ SESSION={user,name:found.name,role:'scouter',id:found.id}; startApp(); return; }
-  } else {
-    // Scouts login by name (simplified — in prod use Firebase Auth)
-    const found = APP.scouts.find(s=>s.name.toLowerCase().replace(/\s/g,'')===user.toLowerCase().replace(/\s/g,''));
-    if(found && pass==='scout'){ SESSION={user,name:found.name,role:'scout',id:found.id}; startApp(); return; }
-    // Demo pass for any scout: "scout"
-    if(APP.scouts.length && pass==='scout'){
-      const s=APP.scouts[0];
-      SESSION={user:s.name,name:s.name,role:'scout',id:s.id}; startApp(); return;
-    }
+  // Scouter check against Firestore
+  const found = APP.scouters.find(s=>s.user===user && s.pass===pass);
+  if(found){
+    SESSION = {user, name:found.name, role:'scouter', id:found.id};
+    setBtnLoading('loginBtn', false, 'Ingresar');
+    startApp();
+    return;
   }
 
+  setBtnLoading('loginBtn', false, 'Ingresar');
   err.classList.add('show');
-  setTimeout(()=>err.classList.remove('show'),2800);
+  setTimeout(()=>err.classList.remove('show'), 2800);
+}
+
+// ── Scout login con Firebase Auth ──
+async function doScoutLogin(){
+  const email = document.getElementById('scoutEmail').value.trim();
+  const pass  = document.getElementById('scoutPassLogin').value;
+  const err   = document.getElementById('scoutLoginErr');
+  err.classList.remove('show');
+  if(!email || !pass){ err.textContent='Completa todos los campos'; err.classList.add('show'); return; }
+  setBtnLoading('scoutLoginBtn', true, 'Ingresar');
+
+  try{
+    const cred = await auth.signInWithEmailAndPassword(email, pass);
+    const uid  = cred.user.uid;
+    // Find matching scout in Firestore by uid
+    const scout = APP.scouts.find(s=>s.uid===uid);
+    if(!scout){
+      await auth.signOut();
+      throw new Error('Scout no encontrado. Contacta a tu scouter.');
+    }
+    SESSION = {user:email, name:scout.name, role:'scout', id:scout.id};
+    setBtnLoading('scoutLoginBtn', false, 'Ingresar');
+    startApp();
+  } catch(e){
+    setBtnLoading('scoutLoginBtn', false, 'Ingresar');
+    err.textContent = e.code==='auth/user-not-found'||e.code==='auth/wrong-password'
+      ? 'Correo o contraseña incorrectos' : e.message;
+    err.classList.add('show');
+    setTimeout(()=>err.classList.remove('show'), 3500);
+  }
+}
+
+// ── Scout register: crea cuenta en Firebase Auth + doc en Firestore ──
+async function doScoutRegister(){
+  const name     = document.getElementById('regName').value.trim();
+  const edad     = document.getElementById('regEdad').value;
+  const fecha    = document.getElementById('regFecha').value;
+  const patrulla = document.getElementById('regPatrulla').value.trim();
+  const email    = document.getElementById('regEmail').value.trim();
+  const pass     = document.getElementById('regPass').value;
+  const err      = document.getElementById('regErr');
+  err.classList.remove('show');
+
+  if(!name||!email||!pass||!patrulla){
+    err.textContent='Completa todos los campos obligatorios'; err.classList.add('show'); return;
+  }
+  if(pass.length < 6){
+    err.textContent='La contraseña debe tener al menos 6 caracteres'; err.classList.add('show'); return;
+  }
+
+  setBtnLoading('regBtn', true, 'Registrar Scout');
+
+  try{
+    // 1. Crear usuario en Firebase Auth
+    const cred = await auth.createUserWithEmailAndPassword(email, pass);
+    await cred.user.updateProfile({ displayName: name });
+    const uid = cred.user.uid;
+
+    // 2. Crear documento en Firestore usando UID como ID
+    const scout = {
+      id: uid, uid, name, edad: Number(edad)||0,
+      fechaIngreso: fecha||new Date().toISOString().split('T')[0],
+      patrulla, email, rumbos:{},
+    };
+    await COL.scouts().doc(uid).set({ ...scout });
+    // Push to local state immediately (onSnapshot will also pick it up)
+    APP.scouts.push({...scout});
+
+    SESSION = {user:email, name, role:'scout', id:uid};
+    setBtnLoading('regBtn', false, 'Registrar Scout');
+    startApp();
+    showToast('✅ Scout registrado exitosamente');
+  } catch(e){
+    setBtnLoading('regBtn', false, 'Registrar Scout');
+    const msgs = {
+      'auth/email-already-in-use':'Ese correo ya está registrado',
+      'auth/invalid-email':'Correo inválido',
+      'auth/weak-password':'Contraseña muy débil (mín. 6 caracteres)',
+    };
+    err.textContent = msgs[e.code] || e.message;
+    err.classList.add('show');
+  }
 }
 
 function startApp(){
@@ -706,19 +1017,16 @@ function startApp(){
   document.getElementById('mainTopbar').style.display='flex';
   document.getElementById('mainApp').style.display='flex';
 
-  // User pill
   const initials = SESSION.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
   document.getElementById('userPillAvatar').textContent=initials;
   document.getElementById('userPillName').textContent=SESSION.name;
   document.getElementById('userPillRole').textContent=SESSION.role==='admin'?'ADMIN':SESSION.role==='scouter'?'SCOUTER':'SCOUT';
   document.getElementById('dashTitle').textContent=`Bienvenido, ${SESSION.name.split(' ')[0]}`;
 
-  // Build nav based on role
   buildNav();
   buildSidebar();
   renderSidebar();
   if(SESSION.role==='scout'){
-    // Scouts go directly to their own profile — no dashboard
     selectScout(SESSION.id);
   } else {
     renderDashboard();
@@ -726,16 +1034,48 @@ function startApp(){
 }
 
 function buildNav(){
-  const nav = document.getElementById('topNav');
-  let html = '';
+  const topNav    = document.getElementById('topNav');
+  const bottomNav = document.getElementById('bottomNav');
   if(SESSION.role==='admin'||SESSION.role==='scouter'){
-    html += `<button class="active" onclick="showView('dashboard')">📊 Dashboard</button>`;
-    html += `<button onclick="showView('scouts')">👤 Scouts</button>`;
-    html += `<button onclick="showView('scouters')">🧭 Scouters</button>`;
-    html += `<button onclick="showView('config')">⚙️ Config</button>`;
+    const navItems = [
+      {view:'dashboard', icon:'📊', label:'Dashboard'},
+      {view:'scouts',    icon:'👤', label:'Scouts'},
+      {view:'scouters',  icon:'🧭', label:'Scouters'},
+      {view:'config',    icon:'⚙️', label:'Config'},
+    ];
+    // Desktop top nav
+    topNav.innerHTML = navItems.map((n,i)=>
+      `<button class="${i===0?'active':''}" onclick="showView('${n.view}')">${n.icon} ${n.label}</button>`
+    ).join('');
+    // Mobile bottom nav
+    bottomNav.innerHTML = `<div class="bottom-nav-inner">`
+      + navItems.map((n,i)=>
+        `<button class="bottom-nav-btn ${i===0?'active':''}" onclick="showView('${n.view}')">
+          <span class="bn-icon">${n.icon}</span>
+          <span class="bn-label">${n.label}</span>
+        </button>`).join('')
+      + `<button class="bottom-nav-btn" onclick="toggleSidebar()">
+          <span class="bn-icon">☰</span>
+          <span class="bn-label">Scouts</span>
+        </button>`
+      + `</div>`;
+  } else {
+    topNav.innerHTML = '';
+    bottomNav.innerHTML = '';
   }
-  // Scout role: no nav buttons — they only see their own profile
-  nav.innerHTML = html;
+}
+
+// ── Sidebar toggle (mobile) ──
+function toggleSidebar(){
+  const sb  = document.getElementById('mainSidebar');
+  const ov  = document.getElementById('sidebarOverlay');
+  const isOpen = sb.classList.contains('open');
+  sb.classList.toggle('open', !isOpen);
+  ov.classList.toggle('show', !isOpen);
+}
+function closeSidebar(){
+  document.getElementById('mainSidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('show');
 }
 
 function buildSidebar(){
@@ -750,6 +1090,8 @@ function buildSidebar(){
 }
 
 function doLogout(){
+  stopRealtimeListeners();
+  if(USE_FIREBASE && auth) auth.signOut().catch(()=>{});
   SESSION=null;
   currentScoutId=null;
   document.getElementById('loginScreen').classList.remove('hidden');
@@ -757,6 +1099,13 @@ function doLogout(){
   document.getElementById('mainApp').style.display='none';
   document.getElementById('loginUser').value='';
   document.getElementById('loginPass').value='';
+  // Reset scout login fields
+  document.getElementById('scoutEmail').value='';
+  document.getElementById('scoutPassLogin').value='';
+  // Reset register fields
+  ['regName','regEdad','regFecha','regPatrulla','regEmail','regPass'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -817,19 +1166,41 @@ function renderScouters(){
     return;
   }
   const colors=['#2E7D50','#8B5E3C','#C4780A','#1565A8','#7B2D8B'];
+  const avatarColors=['#2E7D50','#8B5E3C','#C4780A','#1565A8','#7B2D8B','#1A6B6B','#8B3A3A'];
   grid.innerHTML=all.map((s,i)=>{
     const initials=s.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
     const c=colors[i%colors.length];
-    const scoutCount=APP.scouts.filter(sc=>sc.scouter===s.id||sc.patrulla===s.patrulla).length;
+    // Scouts that belong to this scouter's patrulla
+    const myScouts=APP.scouts.filter(sc=>sc.patrulla && s.patrulla && sc.patrulla===s.patrulla);
+    const scoutPills=myScouts.map((sc,j)=>{
+      const scInitials=sc.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+      const scColor=avatarColors[j%avatarColors.length];
+      const prog=calcOverallProgress(sc);
+      return `<div class="scouter-scout-pill" onclick="goToScout('${sc.id}')">
+        <div class="scouter-scout-pill-av" style="background:${scColor}">${scInitials}</div>
+        <span style="flex:1">${sc.name}</span>
+        <span style="font-size:11px;color:var(--verde);font-weight:700">${prog}%</span>
+      </div>`;
+    }).join('');
     return `<div class="scouter-card">
-      <button class="scouter-del-btn" onclick="confirmDeleteScouter('${s.id}')">🗑</button>
+      <button class="scouter-del-btn" onclick="confirmDeleteScouter('${s.id}')" title="Eliminar scouter">🗑</button>
       <div class="scouter-card-avatar" style="background:${c}">${initials}</div>
       <div class="scouter-card-name">${s.name}</div>
       <div class="scouter-card-role">🧭 Scouter</div>
-      <div class="scouter-card-stats">${s.patrulla||'—'}</div>
-      <div class="scouter-card-stats" style="color:var(--verde)">Usuario: ${s.user}</div>
+      <div class="scouter-card-stats" style="font-weight:700;color:var(--texto)">${s.patrulla||'Sin patrulla'}</div>
+      <div class="scouter-card-stats" style="color:var(--verde)">@${s.user}</div>
+      ${myScouts.length?`
+      <div class="scouter-scouts-list">
+        <div class="scouter-section-label">👤 ${myScouts.length} Scout${myScouts.length!==1?'s':''} registrados</div>
+        ${scoutPills}
+      </div>`:`<div class="scouter-section-label" style="margin-top:6px;color:#ccc">Sin scouts en esta patrulla</div>`}
     </div>`;
   }).join('');
+}
+
+function goToScout(id){
+  showView('scouts');
+  selectScout(id);
 }
 
 function openAddScouter(){
@@ -910,6 +1281,7 @@ function selectScout(id){
   showView('scouts');
   renderSidebar();
   renderPerfilScout();
+  closeSidebar();
 }
 
 function renderPerfilScout(){
@@ -1432,10 +1804,17 @@ async function resetConfig(){
 function showView(view){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.getElementById('view-'+view).classList.add('active');
+  // Sync top nav
   document.querySelectorAll('#topNav button').forEach(b=>b.classList.remove('active'));
   const map={dashboard:0,scouts:1,scouters:2,config:3,rumboform:1};
-  const btns=document.querySelectorAll('#topNav button');
-  if(btns[map[view]]) btns[map[view]].classList.add('active');
+  const topBtns=document.querySelectorAll('#topNav button');
+  if(topBtns[map[view]]) topBtns[map[view]].classList.add('active');
+  // Sync bottom nav
+  document.querySelectorAll('.bottom-nav-btn').forEach(b=>b.classList.remove('active'));
+  const bottomBtns=document.querySelectorAll('.bottom-nav-btn');
+  if(bottomBtns[map[view]]) bottomBtns[map[view]].classList.add('active');
+  // Close sidebar on mobile after navigation
+  closeSidebar();
   if(view==='config') renderConfig();
   if(view==='scouters') renderScouters();
 }
@@ -1452,9 +1831,9 @@ function showToast(msg){
 //  INIT
 // ═══════════════════════════════════════════════════════════
 async function init(){
-  
   if(USE_FIREBASE){
     await loadFirestore();
+    // listeners are started inside loadFirestore after initial data loads
   } else {
     const local=loadLocal();
     Object.assign(APP,local);
